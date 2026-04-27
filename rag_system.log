@@ -1,0 +1,76 @@
+2026-04-26 14:10:52,550 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2026-04-26 14:10:59,314 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2026-04-26 14:10:59,661 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2026-04-26 14:11:36,886 - sentence_transformers.cross_encoder.CrossEncoder - INFO - Use pytorch device: cpu
+2026-04-26 14:12:25,832 - RAGSystem - INFO - [Session: v83fydf0unp] New Query: hii
+2026-04-26 14:12:25,833 - RAGSystem - INFO - [Query Processing] Latency: 0.0005s
+2026-04-26 14:12:26,120 - RAGSystem - INFO - [Retrieval & Fusion] Latency: 0.2874s
+2026-04-26 14:12:26,121 - RAGSystem - INFO - [Generation] Latency: 0.0007s
+2026-04-26 14:12:26,121 - RAGSystem - INFO - [Session: v83fydf0unp] Generated Response Length: 33 chars
+2026-04-26 14:12:26,121 - RAGSystem - INFO - [Total Request] Latency: 0.2890s
+2026-04-26 14:15:37,747 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2026-04-26 14:15:41,866 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2026-04-26 14:15:42,226 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2026-04-26 14:15:43,597 - sentence_transformers.cross_encoder.CrossEncoder - INFO - Use pytorch device: cpu
+2026-04-26 14:15:48,406 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2026-04-26 14:15:51,865 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2026-04-26 14:15:51,968 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2026-04-26 14:15:53,668 - sentence_transformers.cross_encoder.CrossEncoder - INFO - Use pytorch device: cpu
+2026-04-26 14:16:16,696 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2026-04-26 14:16:20,335 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2026-04-26 14:16:20,454 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2026-04-26 14:16:22,021 - sentence_transformers.cross_encoder.CrossEncoder - INFO - Use pytorch device: cpu
+2026-04-26 14:16:41,646 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2026-04-26 14:16:46,508 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2026-04-26 14:16:46,690 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2026-04-26 14:16:49,095 - sentence_transformers.cross_encoder.CrossEncoder - INFO - Use pytorch device: cpu
+2026-04-26 14:18:39,284 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2026-04-26 14:18:42,941 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2026-04-26 14:18:54,885 - RAGSystem - INFO - [Session: jpb10hmuyus] New Query: Explain FAT systems clearly 
+2026-04-26 14:18:54,886 - RAGSystem - INFO - [Query Processing] Latency: 0.0008s
+2026-04-26 14:18:55,626 - RAGSystem - INFO - [Retrieval & Fusion] Latency: 0.7393s
+2026-04-26 14:18:55,627 - RAGSystem - INFO - [Generation] Latency: 0.0008s
+2026-04-26 14:18:55,627 - RAGSystem - INFO - [Session: jpb10hmuyus] Generated Response Length: 33 chars
+2026-04-26 14:18:55,627 - RAGSystem - INFO - [Total Request] Latency: 0.7416s
+2026-04-26 14:19:50,844 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2026-04-26 14:19:55,832 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2026-04-26 14:19:56,048 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2026-04-26 14:19:57,908 - sentence_transformers.cross_encoder.CrossEncoder - INFO - Use pytorch device: cpu
+2026-04-26 14:20:55,150 - RAGSystem - INFO - [Session: azblbrcn0e5] New Query: Explain FAT systems
+2026-04-26 14:20:56,209 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-26 14:20:56,508 - RAGSystem - INFO - [Query Processing] Latency: 1.3574s
+2026-04-26 14:20:57,643 - RAGSystem - INFO - [Retrieval & Fusion] Latency: 1.1348s
+2026-04-26 14:20:59,399 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-26 14:21:02,121 - RAGSystem - INFO - [Generation] Latency: 4.4780s
+2026-04-26 14:21:02,122 - RAGSystem - INFO - [Session: azblbrcn0e5] Generated Response Length: 902 chars
+2026-04-26 14:21:02,122 - RAGSystem - INFO - [Total Request] Latency: 6.9715s
+2026-04-26 14:21:47,447 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2026-04-26 14:21:51,749 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2026-04-26 14:22:06,049 - RAGSystem - INFO - [Session: azblbrcn0e5] New Query: Explain order of volatility 
+2026-04-26 14:22:07,062 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-26 14:22:07,513 - RAGSystem - INFO - [Query Processing] Latency: 1.4630s
+2026-04-26 14:22:08,518 - RAGSystem - INFO - [Retrieval & Fusion] Latency: 1.0050s
+2026-04-26 14:22:10,157 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-26 14:22:10,826 - RAGSystem - INFO - [Generation] Latency: 2.3083s
+2026-04-26 14:22:10,827 - RAGSystem - INFO - [Session: azblbrcn0e5] Generated Response Length: 284 chars
+2026-04-26 14:22:10,827 - RAGSystem - INFO - [Total Request] Latency: 4.7775s
+2026-04-26 14:23:39,538 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2026-04-26 14:23:45,107 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2026-04-26 14:23:45,266 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2026-04-26 14:23:46,962 - sentence_transformers.cross_encoder.CrossEncoder - INFO - Use pytorch device: cpu
+2026-04-26 14:25:51,016 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2026-04-26 14:25:55,562 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2026-04-26 14:25:55,737 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2026-04-26 14:25:57,180 - sentence_transformers.cross_encoder.CrossEncoder - INFO - Use pytorch device: cpu
+2026-04-27 11:44:34,536 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2026-04-27 11:44:39,107 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2026-04-27 11:44:39,423 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2026-04-27 11:44:40,990 - sentence_transformers.cross_encoder.CrossEncoder - INFO - Use pytorch device: cpu
+2026-04-27 11:45:14,589 - RAGSystem - INFO - [Session: txsgp0gun0r] New Query: Explain order of volatility 
+2026-04-27 11:45:15,836 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-27 11:45:16,320 - RAGSystem - INFO - [Query Processing] Latency: 1.7312s
+2026-04-27 11:45:16,922 - RAGSystem - INFO - [Retrieval & Fusion] Latency: 0.6014s
+2026-04-27 11:45:18,189 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-27 11:45:19,214 - RAGSystem - INFO - [Generation] Latency: 2.2924s
+2026-04-27 11:45:19,215 - RAGSystem - INFO - [Session: txsgp0gun0r] Generated Response Length: 405 chars
+2026-04-27 11:45:19,215 - RAGSystem - INFO - [Total Request] Latency: 4.6264s

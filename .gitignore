@@ -1,0 +1,43 @@
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Data & Database
+data/
+chroma_db/
+bm25_corpus.pkl
+*.db
+*.sqlite3
+*.pkl
+
+# Logs
+*.log
+rag_system.log
+
+# Node & Frontend
+ui/node_modules/
+ui/dist/
+ui/.env.local
+ui/.env.development.local
+ui/.env.test.local
+ui/.env.production.local
+ui/npm-debug.log*
+ui/yarn-debug.log*
+ui/yarn-error.log*
+
+# IDEs and OS files
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo

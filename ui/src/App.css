@@ -243,24 +243,26 @@ body {
 .message-wrapper.assistant { align-self: flex-start; }
 
 .message-bubble {
-  padding: 1.25rem;
-  border-radius: 12px;
-  font-size: 1rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  padding: 1.25rem 1.5rem;
+  border-radius: 16px;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   white-space: pre-wrap;
   backdrop-filter: blur(8px);
+  line-height: 1.6;
 }
 
 .message-wrapper.user .message-bubble {
   background: var(--message-user);
   border: 1px solid var(--accent-glow);
-  border-bottom-right-radius: 2px;
+  border-bottom-right-radius: 4px;
 }
 
 .message-wrapper.assistant .message-bubble {
   background: var(--message-ai);
   border: 1px solid var(--panel-border);
-  border-bottom-left-radius: 2px;
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
 /* Metadata Panel */

@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  rag-system:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: enterprise-rag-system
+    ports:
+      - "8000:8000"
+    environment:
+      # Pass environment variables to the container
+      - OPEN_ROUTER_API=${OPEN_ROUTER_API}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-openai/gpt-4o-mini}
+    restart: unless-stopped
+    # If you want to persist the database locally while using Docker, uncomment below:
+    # volumes:
+    #   - ./chroma_db:/app/chroma_db
+    #   - ./data:/app/data
+    #   - ./bm25_corpus.pkl:/app/bm25_corpus.pkl

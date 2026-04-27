@@ -18,6 +18,9 @@ function App() {
     setSessionId(Math.random().toString(36).substring(2, 15));
   }, []);
 
+  // Determine API URL based on environment
+  const apiUrl = import.meta.env.DEV ? 'http://localhost:8000' : '';
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -36,7 +39,7 @@ function App() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/chat', {
+      const response = await fetch(`${apiUrl}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: userMessage.content, session_id: sessionId }),
@@ -80,7 +83,7 @@ function App() {
     formData.append('file', file);
 
     try {
-      const response = await fetch('http://localhost:8000/upload', {
+      const response = await fetch(`${apiUrl}/upload`, {
         method: 'POST',
         body: formData,
       });

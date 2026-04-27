@@ -74,3 +74,31 @@
 2026-04-27 11:45:19,214 - RAGSystem - INFO - [Generation] Latency: 2.2924s
 2026-04-27 11:45:19,215 - RAGSystem - INFO - [Session: txsgp0gun0r] Generated Response Length: 405 chars
 2026-04-27 11:45:19,215 - RAGSystem - INFO - [Total Request] Latency: 4.6264s
+2026-04-27 12:23:50,036 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2026-04-27 12:23:57,023 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2026-04-27 12:23:57,348 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2026-04-27 12:23:59,959 - sentence_transformers.cross_encoder.CrossEncoder - INFO - Use pytorch device: cpu
+2026-04-27 12:24:09,858 - RAGSystem - INFO - [Session: sjhfboonvmd] New Query: Explain FAT File systems
+2026-04-27 12:24:12,105 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-27 12:24:12,539 - RAGSystem - INFO - [Query Processing] Latency: 2.6805s
+2026-04-27 12:24:13,210 - RAGSystem - INFO - [Retrieval & Fusion] Latency: 0.6704s
+2026-04-27 12:24:13,997 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-27 12:24:22,506 - RAGSystem - INFO - [Generation] Latency: 9.2957s
+2026-04-27 12:24:22,506 - RAGSystem - INFO - [Session: sjhfboonvmd] Generated Response Length: 1226 chars
+2026-04-27 12:24:22,506 - RAGSystem - INFO - [Total Request] Latency: 12.6477s
+2026-04-27 15:58:15,489 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2026-04-27 15:58:28,959 - huggingface_hub.utils._http - WARNING - '(ReadTimeoutError("HTTPSConnectionPool(host='huggingface.co', port=443): Read timed out. (read timeout=10)"), '(Request ID: fc16096c-6f76-4077-b5b5-a2708a3a1551)')' thrown while requesting HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/modules.json
+2026-04-27 15:58:28,959 - huggingface_hub.utils._http - WARNING - Retrying in 1s [Retry 1/5].
+2026-04-27 15:58:47,071 - huggingface_hub.utils._http - WARNING - '(ReadTimeoutError("HTTPSConnectionPool(host='huggingface.co', port=443): Read timed out. (read timeout=10)"), '(Request ID: faf8ce44-0367-47f8-9c2f-69dfde22538a)')' thrown while requesting HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/modules.json
+2026-04-27 15:58:47,072 - huggingface_hub.utils._http - WARNING - Retrying in 2s [Retry 2/5].
+2026-04-27 15:58:55,020 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2026-04-27 15:58:55,217 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2026-04-27 15:58:57,041 - sentence_transformers.cross_encoder.CrossEncoder - INFO - Use pytorch device: cpu
+2026-04-27 15:59:10,106 - RAGSystem - INFO - [Session: qup0bybz7t] New Query: Explain what is a FAT system an different types of it
+2026-04-27 15:59:11,805 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-27 15:59:12,245 - RAGSystem - INFO - [Query Processing] Latency: 2.1384s
+2026-04-27 15:59:13,428 - RAGSystem - INFO - [Retrieval & Fusion] Latency: 1.1830s
+2026-04-27 15:59:14,467 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-27 15:59:16,993 - RAGSystem - INFO - [Generation] Latency: 3.5648s
+2026-04-27 15:59:16,993 - RAGSystem - INFO - [Session: qup0bybz7t] Generated Response Length: 562 chars
+2026-04-27 15:59:16,994 - RAGSystem - INFO - [Total Request] Latency: 6.8873s

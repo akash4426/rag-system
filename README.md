@@ -101,4 +101,50 @@ You do not need to run offline indexing scripts! Simply launch the application a
 The system will incrementally process the document through all 23 components, updating both the VectorDB and BM25 Sparse Index in real-time.
 
 ---
+## 🔌 API Reference
+
+The FastAPI backend exposes two primary endpoints designed for headless integration:
+
+### 1. Chat Completion (`POST /chat`)
+Processes a query through the full 23-component RAG pipeline.
+```json
+// Request
+{
+  "query": "What is the order of volatility?",
+  "session_id": "optional-uuid-for-memory"
+}
+
+// Response
+{
+  "session_id": "uuid",
+  "response": {
+    "answer": "The order of volatility is...",
+    "citations": ["bm25, vector_db"],
+    "context_chunks": [
+      {
+        "source": "bm25",
+        "text": "...extracted text chunk..."
+      }
+    ]
+  },
+  "intent_detected": "analytical",
+  "expanded_queries": ["explain volatility order", "define order of volatility"]
+}
+```
+
+### 2. Document Upload (`POST /upload`)
+Accepts `.txt` or `.pdf` files via `multipart/form-data` and triggers incremental indexing.
+
+---
+
+## 📊 Evaluation & Observability
+
+The `SystemLogger` component automatically records pipeline metrics to `rag_system.log`. This file tracks:
+- End-to-end request latency.
+- Sub-pipeline latencies (Query Processing, Retrieval, Fusion, Generation).
+- The raw generated responses and context payloads.
+
+This log file can be parsed for offline evaluation frameworks (like RAGAS or TruLens) to compute Answer Relevance and Context Precision.
+
+---
 *Built as a showcase for Advanced Agentic Architecture.*

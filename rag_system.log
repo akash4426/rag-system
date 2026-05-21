@@ -102,3 +102,25 @@
 2026-04-27 15:59:16,993 - RAGSystem - INFO - [Generation] Latency: 3.5648s
 2026-04-27 15:59:16,993 - RAGSystem - INFO - [Session: qup0bybz7t] Generated Response Length: 562 chars
 2026-04-27 15:59:16,994 - RAGSystem - INFO - [Total Request] Latency: 6.8873s
+2026-05-20 01:45:15,278 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2026-05-20 01:45:21,136 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2026-05-20 01:45:21,469 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2026-05-20 01:45:23,347 - sentence_transformers.cross_encoder.CrossEncoder - INFO - Use pytorch device: cpu
+2026-05-20 01:45:30,102 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2026-05-20 01:45:33,611 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2026-05-20 01:46:01,644 - RAGSystem - INFO - [Session: rbk3w7kmzq8] New Query: Explain all the contents in the document very clearly
+2026-05-20 01:46:04,407 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-20 01:46:04,509 - RAGSystem - INFO - [Query Processing] Latency: 2.8643s
+2026-05-20 01:46:05,227 - RAGSystem - INFO - [Retrieval & Fusion] Latency: 0.7182s
+2026-05-20 01:46:09,020 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-20 01:46:09,022 - RAGSystem - INFO - [Generation] Latency: 3.7948s
+2026-05-20 01:46:09,022 - RAGSystem - INFO - [Session: rbk3w7kmzq8] Generated Response Length: 43 chars
+2026-05-20 01:46:09,022 - RAGSystem - INFO - [Total Request] Latency: 7.3782s
+2026-05-20 01:47:00,739 - RAGSystem - INFO - [Session: rbk3w7kmzq8] New Query: explain Understanding the Importance of Reports
+2026-05-20 01:47:02,160 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-20 01:47:02,776 - RAGSystem - INFO - [Query Processing] Latency: 2.0364s
+2026-05-20 01:47:03,470 - RAGSystem - INFO - [Retrieval & Fusion] Latency: 0.6936s
+2026-05-20 01:47:05,233 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-20 01:47:06,145 - RAGSystem - INFO - [Generation] Latency: 2.6749s
+2026-05-20 01:47:06,146 - RAGSystem - INFO - [Session: rbk3w7kmzq8] Generated Response Length: 737 chars
+2026-05-20 01:47:06,146 - RAGSystem - INFO - [Total Request] Latency: 5.4067s

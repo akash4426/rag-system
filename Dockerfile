@@ -1,7 +1,7 @@
 # ==========================================
 # Stage 1: Build the React Frontend
 # ==========================================
-FROM node:18-alpine AS frontend-build
+FROM node:20-alpine AS frontend-build
 WORKDIR /app/ui
 
 # Copy frontend package files
@@ -18,7 +18,7 @@ RUN npm run build
 # ==========================================
 # Stage 2: Build the Python FastAPI Backend
 # ==========================================
-FROM python:3.10-slim
+FROM python:3.11-slim
 
 # Prevent python from buffering stdout and pyc writing
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -29,7 +29,16 @@ WORKDIR /app
 # Install system dependencies required for some Python packages (e.g. sentence-transformers)
 RUN apt-get update && apt-get install -y \
     build-essential \
+    gcc \
+    g++ \
+    git \
+    libssl-dev \
+    libffi-dev \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
+
+# Upgrade pip, setuptools, and wheel
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
 # Install Python dependencies
 COPY requirements.txt .

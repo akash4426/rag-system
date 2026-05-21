@@ -124,3 +124,37 @@
 2026-05-20 01:47:06,145 - RAGSystem - INFO - [Generation] Latency: 2.6749s
 2026-05-20 01:47:06,146 - RAGSystem - INFO - [Session: rbk3w7kmzq8] Generated Response Length: 737 chars
 2026-05-20 01:47:06,146 - RAGSystem - INFO - [Total Request] Latency: 5.4067s
+2026-05-21 23:37:20,353 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2026-05-21 23:37:24,835 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2026-05-21 23:37:25,234 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2026-05-21 23:37:26,868 - sentence_transformers.cross_encoder.CrossEncoder - INFO - Use pytorch device: cpu
+2026-05-21 23:37:45,006 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2026-05-21 23:37:48,670 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2026-05-21 23:37:52,864 - RAGSystem - INFO - [Session: pxcpj5mtiy] New Query: Summarize my uploaded documents
+2026-05-21 23:37:55,667 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-21 23:37:55,764 - RAGSystem - INFO - [Query Processing] Latency: 2.8999s
+2026-05-21 23:37:56,554 - RAGSystem - INFO - [Retrieval & Fusion] Latency: 0.7893s
+2026-05-21 23:37:57,816 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-21 23:37:59,668 - RAGSystem - INFO - [Generation] Latency: 3.1143s
+2026-05-21 23:37:59,669 - RAGSystem - INFO - [Session: pxcpj5mtiy] Generated Response Length: 930 chars
+2026-05-21 23:37:59,669 - RAGSystem - INFO - [Total Request] Latency: 6.8046s
+2026-05-21 23:38:32,353 - RAGSystem - INFO - [Session: pxcpj5mtiy] New Query: summarise the given document Rust 
+2026-05-21 23:38:36,192 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-21 23:38:36,831 - RAGSystem - INFO - [Query Processing] Latency: 4.4771s
+2026-05-21 23:38:37,354 - RAGSystem - INFO - [Retrieval & Fusion] Latency: 0.5231s
+2026-05-21 23:38:39,210 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-21 23:38:42,360 - RAGSystem - INFO - [Generation] Latency: 5.0060s
+2026-05-21 23:38:42,361 - RAGSystem - INFO - [Session: pxcpj5mtiy] Generated Response Length: 1100 chars
+2026-05-21 23:38:42,361 - RAGSystem - INFO - [Total Request] Latency: 10.0074s
+2026-05-21 23:41:04,905 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2026-05-21 23:41:09,306 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2026-05-21 23:41:09,577 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2026-05-21 23:41:11,472 - sentence_transformers.cross_encoder.CrossEncoder - INFO - Use pytorch device: cpu
+2026-05-21 23:41:27,290 - RAGSystem - INFO - [Session: v6i5zofywi] New Query: Explain Rust and what are the key concepts in it
+2026-05-21 23:41:29,169 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-21 23:41:29,811 - RAGSystem - INFO - [Query Processing] Latency: 2.5211s
+2026-05-21 23:41:30,595 - RAGSystem - INFO - [Retrieval & Fusion] Latency: 0.7834s
+2026-05-21 23:41:32,547 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-21 23:41:34,758 - RAGSystem - INFO - [Generation] Latency: 4.1628s
+2026-05-21 23:41:34,758 - RAGSystem - INFO - [Session: v6i5zofywi] Generated Response Length: 993 chars
+2026-05-21 23:41:34,758 - RAGSystem - INFO - [Total Request] Latency: 7.4683s

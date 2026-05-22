@@ -54,4 +54,5 @@ COPY --from=frontend-build /app/ui/dist /app/ui/dist
 EXPOSE 8000
 
 # Command to run the application using Uvicorn
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Uses PORT env var (set by Render) or defaults to 8000 for local dev
+CMD uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}

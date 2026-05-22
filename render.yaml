@@ -1,0 +1,19 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: enterprise-rag-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: OPEN_ROUTER_API
+        sync: false  # Set manually in Render dashboard
+      - key: OPENROUTER_MODEL
+        value: openai/gpt-4o-mini
+      - key: PINECONE_API_KEY
+        sync: false  # Set manually in Render dashboard
+      - key: PINECONE_INDEX_NAME
+        value: rag-system
+      - key: ALLOWED_ORIGINS
+        sync: false  # Set to your Vercel URL after deploying frontend

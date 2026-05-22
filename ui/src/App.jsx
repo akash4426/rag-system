@@ -255,7 +255,7 @@ function App() {
     setSessionId(Math.random().toString(36).substring(2, 12));
   }, []);
 
-  const apiUrl = import.meta.env.DEV ? 'http://localhost:8000' : '';
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

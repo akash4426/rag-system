@@ -1,6 +1,4 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 import os
 from dotenv import load_dotenv
 
@@ -32,9 +30,11 @@ from core.ingestion.indexer import IndexBuilder
 
 app = FastAPI(title="23-Component RAG API")
 
+# CORS — allow Vercel frontend and local dev
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Allow all origins for local dev
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -63,6 +63,10 @@ sessions = {}
 class QueryRequest(BaseModel):
     query: str
     session_id: str = None
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
 
 @app.post("/chat")
 def chat(request: QueryRequest):
@@ -150,24 +154,3 @@ async def upload_file(file: UploadFile = File(...)):
         return {"status": "success", "message": f"Successfully uploaded and indexed {file.filename}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-# ── Serve React Frontend (Unified Deployment) ──
-ui_dist_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "ui", "dist")
-
-if os.path.exists(ui_dist_path):
-    # Mount the assets directory explicitly
-    assets_path = os.path.join(ui_dist_path, "assets")
-    if os.path.exists(assets_path):
-        app.mount("/assets", StaticFiles(directory=assets_path), name="assets")
-        
-    @app.get("/{full_path:path}")
-    async def serve_frontend(full_path: str):
-        # Serve specific requested files if they exist (favicon, manifest, etc.)
-        file_path = os.path.join(ui_dist_path, full_path)
-        if full_path and os.path.exists(file_path) and os.path.isfile(file_path):
-            return FileResponse(file_path)
-        # Fallback to index.html for React SPA routing
-        index_path = os.path.join(ui_dist_path, "index.html")
-        if os.path.exists(index_path):
-            return FileResponse(index_path)
-        return {"message": "Frontend build not found."}

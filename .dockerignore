@@ -11,15 +11,11 @@ ENV/
 *.sqlite3
 *.db
 chroma_db/
-data/
 bm25_corpus.pkl
 rag_system.log
 .DS_Store
+.git/
+.gitignore
 
-# UI specific
-ui/node_modules/
-ui/dist/
-ui/.env.local
-ui/.env.development.local
-ui/.env.test.local
-ui/.env.production.local
+# Frontend — deployed on Vercel, not needed in backend image
+ui/

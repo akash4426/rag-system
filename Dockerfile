@@ -5,9 +5,9 @@ FROM node:20-alpine AS frontend-builder
 
 WORKDIR /app/ui
 
-# Copy package files and install dependencies (use npm ci for reproducible builds)
+# Copy package files and install dependencies
 COPY ui/package*.json ./
-RUN npm ci --prefer-offline --no-audit
+RUN npm install --legacy-peer-deps --no-fund --no-save
 
 # Copy the rest of the frontend source code and build it
 COPY ui/ .

@@ -482,3 +482,19 @@
 2026-05-24 15:33:15,799 - pinecone_plugin_interface.logging - INFO - Installing plugin inference into Pinecone
 2026-05-24 15:33:17,484 - pinecone_plugin_interface.logging - INFO - Discovering subpackages in _NamespacePath(['/opt/homebrew/Caskroom/miniforge/base/envs/rag_env/lib/python3.11/site-packages/pinecone_plugins'])
 2026-05-24 15:33:17,484 - pinecone_plugin_interface.logging - INFO - Looking for plugins in pinecone_plugins.inference
+2026-05-24 15:39:02,144 - pinecone_plugin_interface.logging - INFO - Discovering subpackages in _NamespacePath(['/opt/homebrew/Caskroom/miniforge/base/envs/rag_env/lib/python3.11/site-packages/pinecone_plugins'])
+2026-05-24 15:39:02,144 - pinecone_plugin_interface.logging - INFO - Looking for plugins in pinecone_plugins.inference
+2026-05-24 15:39:02,151 - pinecone_plugin_interface.logging - INFO - Installing plugin inference into Pinecone
+2026-05-24 15:39:04,982 - pinecone_plugin_interface.logging - INFO - Discovering subpackages in _NamespacePath(['/opt/homebrew/Caskroom/miniforge/base/envs/rag_env/lib/python3.11/site-packages/pinecone_plugins'])
+2026-05-24 15:39:04,983 - pinecone_plugin_interface.logging - INFO - Looking for plugins in pinecone_plugins.inference
+2026-05-24 15:39:07,451 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2026-05-24 15:39:12,702 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2026-05-24 15:39:12,886 - pinecone_plugin_interface.logging - INFO - Discovering subpackages in _NamespacePath(['/opt/homebrew/Caskroom/miniforge/base/envs/rag_env/lib/python3.11/site-packages/pinecone_plugins'])
+2026-05-24 15:39:12,886 - pinecone_plugin_interface.logging - INFO - Looking for plugins in pinecone_plugins.inference
+2026-05-24 15:39:12,886 - pinecone_plugin_interface.logging - INFO - Installing plugin inference into Pinecone
+2026-05-24 15:39:13,933 - pinecone_plugin_interface.logging - INFO - Discovering subpackages in _NamespacePath(['/opt/homebrew/Caskroom/miniforge/base/envs/rag_env/lib/python3.11/site-packages/pinecone_plugins'])
+2026-05-24 15:39:13,933 - pinecone_plugin_interface.logging - INFO - Looking for plugins in pinecone_plugins.inference
+2026-05-24 15:39:15,829 - sentence_transformers.cross_encoder.CrossEncoder - INFO - Use pytorch device: mps
+2026-05-24 15:39:16,166 - pinecone_plugin_interface.logging - INFO - Discovering subpackages in _NamespacePath(['/opt/homebrew/Caskroom/miniforge/base/envs/rag_env/lib/python3.11/site-packages/pinecone_plugins'])
+2026-05-24 15:39:16,166 - pinecone_plugin_interface.logging - INFO - Looking for plugins in pinecone_plugins.inference
+2026-05-24 15:39:16,167 - pinecone_plugin_interface.logging - INFO - Installing plugin inference into Pinecone

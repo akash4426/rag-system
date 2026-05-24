@@ -5,9 +5,9 @@ FROM node:20-alpine AS frontend-builder
 
 WORKDIR /app/ui
 
-# Copy package files and install dependencies
+# Copy package files and install dependencies (use npm ci for reproducible builds)
 COPY ui/package*.json ./
-RUN npm install
+RUN npm ci --prefer-offline --no-audit
 
 # Copy the rest of the frontend source code and build it
 COPY ui/ .
@@ -24,8 +24,8 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Install system dependencies required for some Python packages (e.g. sentence-transformers, chromadb)
-RUN apt-get update && apt-get install -y \
+# Install system dependencies required for some Python packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     gcc \
     g++ \
@@ -33,7 +33,8 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     libffi-dev \
     python3-dev \
-    && rm -rf /var/lib/apt/lists/*
+    curl \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Upgrade pip, setuptools, and wheel
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
@@ -48,8 +49,16 @@ COPY . .
 # Copy the built React app from Stage 1 into the backend container
 COPY --from=frontend-builder /app/ui/dist /app/ui/dist
 
+# Create logs directory
+RUN mkdir -p /app/logs
+
 # Expose the port the app runs on
 EXPOSE 8000
 
-# Command to run the application using Uvicorn
-CMD uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:8000/health || exit 1
+
+# Production: Run with Gunicorn + Uvicorn workers
+# For Render/Cloud: set PORT env var, defaults to 8000
+CMD gunicorn api.main:app --workers 2 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000} --timeout 120

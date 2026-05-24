@@ -27,6 +27,7 @@ from core.generation.response_formatter import ResponseFormatter
 from core.generation.memory import MemoryModule
 from utils.observability import SystemLogger
 from core.ingestion.indexer import IndexBuilder
+from core.ingestion.storage import Storage
 
 app = FastAPI(title="23-Component RAG API")
 
@@ -57,6 +58,9 @@ prompt_builder = PromptBuilder()
 llm = LLMEngine()
 formatter = ResponseFormatter()
 
+# Storage backend (Pinecone or fallback)
+storage = Storage(use_pinecone=True)
+
 # Simple in-memory session store
 sessions = {}
 
@@ -64,9 +68,26 @@ class QueryRequest(BaseModel):
     query: str
     session_id: str = None
 
+@app.on_event("startup")
+async def startup_event():
+    """Log system status on startup."""
+    print("\n" + "="*60)
+    print("🚀 RAG System Starting Up")
+    print("="*60)
+    if storage.use_pinecone:
+        print("✓ Vector DB: Pinecone (Production)")
+    else:
+        print("✓ Vector DB: In-Memory (Development)")
+    print("✓ LLM: OpenAI")
+    print("✓ Embeddings: Sentence-Transformers")
+    print("="*60 + "\n")
+
 @app.get("/health")
 def health_check():
-    return {"status": "healthy"}
+    return {
+        "status": "healthy",
+        "vector_db": "pinecone" if storage.use_pinecone else "memory"
+    }
 
 @app.post("/chat")
 def chat(request: QueryRequest):
@@ -135,22 +156,126 @@ def chat(request: QueryRequest):
 
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
+    """Upload and index a document (PDF or TXT)."""
+    filename = file.filename
+    print(f"\n📤 Uploading: {filename}")
+    
     try:
+        # Validate file
+        if not file:
+            raise ValueError("No file provided")
+        
         # Create data directory if it doesn't exist
         os.makedirs("data", exist_ok=True)
         
-        file_path = f"data/{file.filename}"
+        # Save file
+        file_path = os.path.join("data", filename)
+        content = await file.read()
+        
+        if not content:
+            raise ValueError(f"File is empty: {filename}")
+        
         with open(file_path, "wb") as buffer:
-            content = await file.read()
             buffer.write(content)
-            
-        # Incrementally build the index for the new file
-        indexer = IndexBuilder()
-        indexer.build_index_for_file(file_path)
         
-        # Reload the tfidf retriever corpus so it has the newest BM25 data
-        tfidf.reload_corpus()
+        print(f"  ✓ File saved to {file_path} ({len(content)} bytes)")
         
-        return {"status": "success", "message": f"Successfully uploaded and indexed {file.filename}"}
+        # Index the file
+        from starlette.concurrency import run_in_threadpool
+        
+        def run_indexer():
+            try:
+                # Get the embedder model from QueryEmbeddingModel
+                embedder_instance = embedder.embedder if hasattr(embedder, 'embedder') else embedder
+                
+                # Create indexer with global storage (already initialized at startup)
+                indexer = IndexBuilder(
+                    data_dir="data",
+                    embedder=embedder_instance,
+                    storage=storage  # Use global storage initialized at startup
+                )
+                
+                # Index the specific file
+                chunks = indexer.build_index_for_file(file_path)
+                
+                if chunks is None:
+                    raise ValueError(f"Failed to index {filename}")
+                
+                return chunks
+                
+            except Exception as e:
+                logger.log_error(f"Indexing error for {filename}: {str(e)}")
+                raise
+        
+        # Run indexing in thread pool to avoid blocking
+        try:
+            chunks = await run_in_threadpool(run_indexer)
+        except Exception as e:
+            print(f"  ✗ Indexing failed: {str(e)}")
+            raise
+        
+        if not chunks:
+            raise ValueError(f"No content extracted from {filename}")
+        
+        # Update BM25 index
+        try:
+            texts = [chunk.page_content for chunk in chunks]
+            tfidf.add_documents(texts)
+            print(f"  ✓ BM25 index updated with {len(texts)} texts")
+        except Exception as e:
+            logger.log_error(f"BM25 update error: {str(e)}")
+            # Don't fail completely if BM25 fails, just log it
+            print(f"  ⚠ Warning: BM25 update failed: {str(e)}")
+        
+        # Log success
+        logger.log_upload(filename, len(chunks))
+        
+        print(f"✅ Successfully indexed {filename}: {len(chunks)} chunks\n")
+        
+        return {
+            "status": "success",
+            "message": f"Successfully uploaded and indexed {filename}",
+            "chunks": len(chunks),
+            "filename": filename
+        }
+        
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        error_msg = f"Upload failed for {filename}: {str(e)}"
+        print(f"❌ {error_msg}\n")
+        logger.log_error(error_msg)
+        
+        import traceback
+        traceback.print_exc()
+        
+        raise HTTPException(
+            status_code=500,
+            detail=error_msg
+        )
+
+# ==========================================
+# Frontend Serving (Monolithic Deployment)
+# ==========================================
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+# The dist folder is generated by the Docker multi-stage build or `npm run build`
+frontend_dist = os.path.join(os.path.dirname(__file__), "..", "ui", "dist")
+
+if os.path.exists(frontend_dist):
+    # Mount the /assets directory directly
+    assets_dir = os.path.join(frontend_dist, "assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+        
+    # Catch-all route to serve the SPA index.html for React Router
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        # Prevent accessing the root index.html recursively by serving the file if it exists
+        file_path = os.path.join(frontend_dist, full_path)
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
+        
+        # Fallback to index.html for client-side routing
+        return FileResponse(os.path.join(frontend_dist, "index.html"))
+else:
+    print(f"Warning: Frontend build directory not found at {frontend_dist}. Running in API-only mode.")

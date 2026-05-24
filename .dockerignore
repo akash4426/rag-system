@@ -17,5 +17,6 @@ rag_system.log
 .git/
 .gitignore
 
-# Frontend — deployed on Vercel, not needed in backend image
-ui/
+# Frontend build artifacts
+ui/node_modules/
+ui/dist/

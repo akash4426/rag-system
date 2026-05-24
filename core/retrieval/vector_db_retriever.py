@@ -14,10 +14,17 @@ class VectorDBRetriever:
 
             retrieved_docs = []
             for match in matches:
-                text = match.metadata.get("text", "") if match.metadata else ""
+                if isinstance(match, dict):
+                    metadata = match.get("metadata", {})
+                    score = float(match.get("score", 0.0))
+                else:
+                    metadata = match.metadata if hasattr(match, 'metadata') else {}
+                    score = float(match.score) if hasattr(match, 'score') else 0.0
+                    
+                text = metadata.get("text", "") if metadata else ""
                 retrieved_docs.append({
                     "content": text,
-                    "score": float(match.score),
+                    "score": score,
                     "source": "vector_db"
                 })
 

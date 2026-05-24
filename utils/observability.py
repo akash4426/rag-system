@@ -25,3 +25,11 @@ class SystemLogger:
 
     def log_generation(self, session_id: str, prompt: str, response: str):
         self.logger.info(f"[Session: {session_id}] Generated Response Length: {len(response)} chars")
+
+    def log_error(self, message: str):
+        """Log an error message."""
+        self.logger.error(message)
+    
+    def log_upload(self, filename: str, chunks: int):
+        """Log successful document upload."""
+        self.logger.info(f"[Upload] Successfully indexed {filename}: {chunks} chunks")

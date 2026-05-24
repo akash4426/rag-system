@@ -255,7 +255,8 @@ function App() {
     setSessionId(Math.random().toString(36).substring(2, 12));
   }, []);
 
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+  // In a monolithic deployment, the API is served from the same domain, so we use a relative path.
+  const apiUrl = import.meta.env.VITE_API_URL || '';
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -322,11 +323,17 @@ function App() {
         method: 'POST',
         body: formData,
       });
-      if (!response.ok) throw new Error('Upload failed');
-      await response.json();
-      setUploadStatus({ type: 'success', msg: `Indexed ${file.name}` });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.detail || 'Upload failed');
+      }
+      
+      setUploadStatus({ type: 'success', msg: `✓ ${data.message} (${data.chunks} chunks)` });
     } catch (error) {
-      setUploadStatus({ type: 'error', msg: error.message });
+      console.error('Upload error:', error);
+      setUploadStatus({ type: 'error', msg: `✗ ${error.message}` });
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

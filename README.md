@@ -19,7 +19,7 @@ The system strictly adheres to a modular class-per-component design, logically s
 - **Document Loader:** Ingests raw `.txt` and `.pdf` files.
 - **Text Splitter:** Implements recursive character chunking.
 - **Embedding Generator:** Generates dense vector representations using `SentenceTransformers`.
-- **Storage:** Persists vector data to ChromaDB.
+- **Storage:** Persists vector data to **Pinecone** (production) or ChromaDB (fallback).
 - **Index Builder:** Manages the ingestion orchestration and builds the offline BM25 sparse index.
 
 ### 2. Query Pipeline
@@ -29,7 +29,7 @@ The system strictly adheres to a modular class-per-component design, logically s
 
 ### 3. Retrieval Pipeline
 - **TF-IDF / BM25 Retriever:** Performs keyword-based sparse search.
-- **Vector DB Retriever:** Performs dense semantic search via ChromaDB.
+- **Vector DB Retriever:** Performs dense semantic search via Pinecone or ChromaDB.
 - **Hybrid Fusion Engine:** Merges sparse and dense results using Reciprocal Rank Fusion.
 - **Dynamic Weight Controller:** Adjusts BM25/Vector weights based on user intent.
 - **Re-ranker:** Uses a `Cross-Encoder` to intelligently sort the fused results.
@@ -76,20 +76,40 @@ The system strictly adheres to a modular class-per-component design, logically s
    ```
 
 4. **Environment Variables:**
-   Copy the example environment file and insert your OpenRouter API key.
+   Copy the example environment file and insert your API keys:
    ```bash
    cp .env.example .env
    ```
-   Edit `.env` to include your valid API key.
+   
+   **For Production with Pinecone:**
+   - Get your Pinecone API key from [pinecone.io](https://www.pinecone.io/)
+   - Add to `.env`:
+     ```env
+     PINECONE_API_KEY=your_api_key_here
+     PINECONE_ENVIRONMENT=us-east-1
+     OPENAI_API_KEY=your_openai_key_here
+     ```
+   
+   **For Local Development (Fallback):**
+   - Leave Pinecone variables empty to use in-memory storage
+   - Only OPENAI_API_KEY is required
+   
+   See [PINECONE_SETUP.md](./PINECONE_SETUP.md) for detailed setup instructions.
 
 ### Running the System
 
-You can boot both the FastAPI backend and the React development server concurrently using the provided start script:
+**Method 1: Docker (Recommended for Production)**
+You can instantly spin up both the backend and frontend, fully containerized, using Docker Compose:
+```bash
+docker compose up --build
+```
+The React UI will be available at `http://localhost:3000` and the API at `http://localhost:8000`. Your Vector Database is safely persisted in a Docker Volume.
 
+**Method 2: Local Development**
+You can boot both the FastAPI backend and the React development server concurrently using the provided start script:
 ```bash
 python run.py
 ```
-
 The React UI will automatically open in your default browser at `http://localhost:5173`, communicating with the FastAPI backend on `http://localhost:8000`.
 
 ---

@@ -14,6 +14,6 @@ services:
       - key: PINECONE_API_KEY
         sync: false  # Set manually in Render dashboard
       - key: PINECONE_INDEX_NAME
-        value: rag-system
+        value: ragsystem
       - key: ALLOWED_ORIGINS
         sync: false  # Set to your Vercel URL after deploying frontend

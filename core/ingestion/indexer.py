@@ -10,11 +10,11 @@ class IndexBuilder:
     Orchestrates the ingestion pipeline. Stores vectors in Pinecone.
     BM25 corpus is rebuilt in-memory from Pinecone on startup.
     """
-    def __init__(self, data_dir: str = "data"):
+    def __init__(self, data_dir: str = "data", embedder=None, storage=None):
         self.loader = DocumentLoader(directory=data_dir)
         self.splitter = TextSplitter()
-        self.embedder = EmbeddingGenerator()
-        self.storage = Storage()
+        self.embedder = embedder if embedder else EmbeddingGenerator()
+        self.storage = storage if storage else Storage()
 
     def build_index(self):
         print("Starting Indexing Process...")
@@ -68,6 +68,7 @@ class IndexBuilder:
         self.storage.add_documents(ids=ids, embeddings=embeddings, documents=texts, metadatas=metadatas)
 
         print(f"Successfully incrementally indexed {len(chunks)} chunks from {filepath}.")
+        return chunks
 
 if __name__ == "__main__":
     builder = IndexBuilder()

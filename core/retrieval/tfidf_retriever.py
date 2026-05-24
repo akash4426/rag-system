@@ -36,9 +36,15 @@ class TFIDFRetriever:
             self.corpus = []
             self.bm25 = None
 
-    def reload_corpus(self):
-        """Rebuild BM25 index from Pinecone (called after new document upload)."""
-        self._build_from_pinecone()
+    def add_documents(self, new_texts: list[str]):
+        """Append new texts to corpus and rebuild BM25 in-memory."""
+        if not new_texts:
+            return
+        self.corpus.extend(new_texts)
+        tokenized_corpus = [doc.lower().split() for doc in self.corpus]
+        from rank_bm25 import BM25Okapi
+        self.bm25 = BM25Okapi(tokenized_corpus)
+        print(f"BM25 index updated. Total documents: {len(self.corpus)}")
 
     def retrieve(self, query: str, top_k: int = 5) -> list[dict]:
         if not self.bm25:

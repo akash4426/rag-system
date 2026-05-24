@@ -1,5 +1,20 @@
 # ==========================================
-# FastAPI Backend — Render Deployment
+# Stage 1: Build the React Frontend
+# ==========================================
+FROM node:20-alpine AS frontend-builder
+
+WORKDIR /app/ui
+
+# Copy package files and install dependencies
+COPY ui/package*.json ./
+RUN npm install
+
+# Copy the rest of the frontend source code and build it
+COPY ui/ .
+RUN npm run build
+
+# ==========================================
+# Stage 2: Build the FastAPI Backend & Serve
 # ==========================================
 FROM python:3.11-slim
 
@@ -9,7 +24,7 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Install system dependencies required for some Python packages (e.g. sentence-transformers)
+# Install system dependencies required for some Python packages (e.g. sentence-transformers, chromadb)
 RUN apt-get update && apt-get install -y \
     build-essential \
     gcc \
@@ -30,9 +45,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy backend source code
 COPY . .
 
+# Copy the built React app from Stage 1 into the backend container
+COPY --from=frontend-builder /app/ui/dist /app/ui/dist
+
 # Expose the port the app runs on
 EXPOSE 8000
 
 # Command to run the application using Uvicorn
-# Uses PORT env var (set by Render) or defaults to 8000 for local dev
 CMD uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}

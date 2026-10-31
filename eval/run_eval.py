@@ -138,6 +138,58 @@ def evaluate_e1(args: argparse.Namespace) -> tuple[pd.DataFrame, dict[str, float
     return frame, summary
 
 
+def evaluate_e3(args: argparse.Namespace) -> tuple[pd.DataFrame, dict[str, float]]:
+    """Evaluate adaptive controller + three-way RRF fusion (experiment E3)."""
+    from retrieval.adaptive import AdaptiveRetriever
+    from retrieval.structural import StructuralRetriever
+    from sah_config import SAHConfig, config_for_experiment
+
+    questions = load_questions(Path(args.questions))
+    baseline, _, structure_store, _ = build_retriever(args)
+    config = config_for_experiment("E3", SAHConfig.from_env())
+    config.top_k = args.k
+    structural = StructuralRetriever(structure_store, config=config)
+    adaptive = AdaptiveRetriever(baseline, structural, config=config)
+    rows: list[dict[str, Any]] = []
+
+    for item in questions:
+        document = structure_store.get_document_by_filename(item["doc"])
+        doc_ids = [document["doc_id"]] if document else None
+        started = time.perf_counter()
+        result = adaptive.retrieve_adaptive(item["question"], k=args.k, doc_ids=doc_ids)
+        latency_ms = (time.perf_counter() - started) * 1000.0
+        flags = [is_relevant(chunk, item) for chunk in result.chunks]
+        rows.append(
+            {
+                "experiment": "E3",
+                "question": item["question"],
+                "doc": item["doc"],
+                "gold_section": item["gold_section"],
+                "answerable": bool(item["answerable"]),
+                f"recall@{args.k}": recall_at_k(flags, args.k),
+                f"precision@{args.k}": precision_at_k(flags, args.k),
+                "mrr": reciprocal_rank(flags),
+                f"ndcg@{args.k}": ndcg_at_k(flags, args.k),
+                "latency_ms": latency_ms,
+                "retrieved_ids": ";".join(chunk.chunk_id for chunk in result.chunks),
+                "retrieved_sections": ";".join(chunk.section_title or "" for chunk in result.chunks),
+                "controller_retrievers": ",".join(result.decision.retrievers),
+                "controller_complexity": result.decision.complexity,
+                "controller_reason": result.decision.reason,
+                "retriever_counts": json.dumps(result.counts),
+                "retriever_latencies_ms": json.dumps(result.latencies_ms),
+                "selected_sections": ";".join(item["title"] for item in result.selected_sections),
+                "structural_strategy": result.structural_strategy,
+            }
+        )
+
+    frame = pd.DataFrame(rows)
+    metric_cols = [f"recall@{args.k}", f"precision@{args.k}", "mrr", f"ndcg@{args.k}", "latency_ms"]
+    summary = {column: float(frame[column].mean()) for column in metric_cols}
+    summary["n_queries"] = float(len(frame))
+    return frame, summary
+
+
 def evaluate_e2(args: argparse.Namespace) -> tuple[pd.DataFrame, dict[str, float]]:
     """Evaluate the STAIR-inspired structure-aware retriever (experiment E2)."""
     from retrieval.structural import StructuralRetriever
@@ -198,6 +250,8 @@ def main() -> None:
         frame, summary = evaluate_e1(args)
     elif args.experiment == "E2":
         frame, summary = evaluate_e2(args)
+    elif args.experiment == "E3":
+        frame, summary = evaluate_e3(args)
     else:
         raise SystemExit(f"{args.experiment} is not implemented until its phase is complete")
 

@@ -1,0 +1,2 @@
+recall@5,precision@5,mrr,ndcg@5,latency_ms,retry_count,n_queries
+0.8,0.32,0.7,0.716634705202509,969.9169583851472,0.4,5.0

@@ -1219,6 +1219,550 @@
   flex-shrink: 0;
 }
 
+/* ═══ Live Trace Panel ═══ */
+.live-trace {
+  align-self: flex-start;
+  width: 100%;
+  max-width: 78%;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  animation: fade-slide-in 0.35s ease;
+  margin-bottom: var(--sp-2);
+}
+
+.live-trace-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: rgba(139, 92, 246, 0.06);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.live-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--violet);
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.6);
+  animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; box-shadow: 0 0 6px rgba(139, 92, 246, 0.4); }
+  50% { opacity: 0.5; box-shadow: 0 0 14px rgba(139, 92, 246, 0.8); }
+}
+
+.live-trace-title {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.3px;
+}
+
+.live-stair-pill {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 2px var(--sp-2);
+  border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, rgba(52, 211, 153, 0.15), rgba(52, 211, 153, 0.06));
+  color: var(--green);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  animation: stair-pill-enter 0.4s ease;
+}
+
+@keyframes stair-pill-enter {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.live-mode {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  padding: 2px var(--sp-2);
+  border-radius: var(--radius-pill);
+  background: var(--violet-soft);
+  color: var(--violet);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.live-mode.sah {
+  background: var(--amber-soft);
+  color: var(--amber);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+.live-trace-timer {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.live-trace-events {
+  padding: var(--sp-2) var(--sp-3);
+  max-height: 280px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 92, 246, 0.15) transparent;
+}
+
+.live-event {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-2);
+  border-radius: var(--radius-sm);
+  transition: background 0.15s ease;
+  animation: live-event-enter 0.3s ease;
+}
+
+@keyframes live-event-enter {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.live-event:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.live-event.stair-highlight {
+  background: rgba(52, 211, 153, 0.04);
+  border-left: 2px solid rgba(52, 211, 153, 0.3);
+  margin-left: -2px;
+}
+
+.live-event-marker {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  margin-top: 5px;
+  background: var(--text-dim);
+  transition: all 0.25s ease;
+}
+
+.live-event.done .live-event-marker {
+  background: var(--green);
+  box-shadow: 0 0 6px rgba(52, 211, 153, 0.4);
+}
+
+.live-event.running .live-event-marker {
+  background: var(--violet);
+  box-shadow: 0 0 6px rgba(139, 92, 246, 0.4);
+  animation: pulse-glow 1.2s ease infinite;
+}
+
+.live-event.warning .live-event-marker {
+  background: var(--amber);
+  box-shadow: 0 0 6px var(--amber-glow);
+}
+
+.live-event.error .live-event-marker {
+  background: var(--red);
+  box-shadow: 0 0 6px rgba(248, 113, 113, 0.5);
+}
+
+.live-event-marker.stair {
+  background: var(--green);
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.5);
+  width: 8px;
+  height: 8px;
+}
+
+.live-event-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.live-event-top {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.live-event-stage {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--violet);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.live-event.stair-highlight .live-event-stage {
+  color: var(--green);
+}
+
+.stair-inline-badge {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(52, 211, 153, 0.12);
+  color: var(--green);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.live-event-message {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.live-event-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+  margin-top: var(--sp-1);
+}
+
+.live-chip {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  padding: 1px var(--sp-2);
+  border-radius: 3px;
+  background: var(--bg-surface);
+  color: var(--text-dim);
+  border: 1px solid var(--border-subtle);
+}
+
+.live-chip.retrievers {
+  color: var(--violet);
+  background: var(--violet-soft);
+  border-color: rgba(139, 92, 246, 0.15);
+}
+
+.live-chip.section {
+  color: var(--green);
+  background: rgba(52, 211, 153, 0.08);
+  border-color: rgba(52, 211, 153, 0.2);
+}
+
+.live-chip.good {
+  color: var(--green);
+  background: rgba(52, 211, 153, 0.08);
+}
+
+.live-chip.warn {
+  color: var(--amber);
+  background: var(--amber-soft);
+}
+
+.live-event-reason {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  color: var(--text-dim);
+  margin-top: var(--sp-1);
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.live-event-model {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+/* ═══ STAIR Pipeline Visualization ═══ */
+.stair-pipeline {
+  border-bottom: 1px solid var(--border-subtle);
+  padding: var(--sp-3) var(--sp-4);
+  background: rgba(52, 211, 153, 0.03);
+  animation: fade-slide-in 0.4s ease;
+}
+
+.stair-pipeline-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+}
+
+.stair-pipeline-icon {
+  font-size: 0.85rem;
+}
+
+.stair-pipeline-title {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--green);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.stair-strategy-badge {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  padding: 1px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stair-strategy-badge.llm {
+  background: rgba(52, 211, 153, 0.12);
+  color: var(--green);
+  border: 1px solid rgba(52, 211, 153, 0.25);
+}
+
+.stair-strategy-badge.keyword_fallback {
+  background: var(--amber-soft);
+  color: var(--amber);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.stair-model-badge {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--bg-surface);
+  color: var(--text-dim);
+  border: 1px solid var(--border-subtle);
+}
+
+.stair-steps {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: var(--sp-2) 0;
+  overflow-x: auto;
+}
+
+.stair-step-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.stair-step {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-panel);
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.stair-step.pending {
+  opacity: 0.35;
+}
+
+.stair-step.running {
+  border-color: rgba(139, 92, 246, 0.5);
+  background: var(--violet-soft);
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.12);
+  animation: stair-step-pulse 1.5s ease infinite;
+}
+
+@keyframes stair-step-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(139, 92, 246, 0.08); }
+  50% { box-shadow: 0 0 16px rgba(139, 92, 246, 0.2); }
+}
+
+.stair-step.done {
+  border-color: rgba(52, 211, 153, 0.4);
+  background: rgba(52, 211, 153, 0.06);
+}
+
+.stair-step.warning {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: var(--amber-soft);
+}
+
+.stair-step-icon {
+  font-size: 0.72rem;
+}
+
+.stair-step-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-secondary);
+}
+
+.stair-step.done .stair-step-label { color: var(--green); }
+.stair-step.running .stair-step-label { color: var(--violet); }
+.stair-step.warning .stair-step-label { color: var(--amber); }
+
+.stair-step-spinner {
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid var(--violet);
+  border-bottom-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.stair-step-check {
+  font-size: 0.65rem;
+  color: var(--green);
+  font-weight: 700;
+}
+
+.stair-step-warn {
+  font-size: 0.65rem;
+  color: var(--amber);
+}
+
+.stair-step-connector {
+  width: 16px;
+  height: 1.5px;
+  background: var(--border-subtle);
+  flex-shrink: 0;
+  transition: background 0.3s ease;
+}
+
+.stair-step-connector.active {
+  background: rgba(52, 211, 153, 0.5);
+  box-shadow: 0 0 4px rgba(52, 211, 153, 0.2);
+}
+
+/* ── STAIR Selected Sections ── */
+.stair-selected-sections {
+  margin-top: var(--sp-2);
+  background: var(--bg-deep);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-2) var(--sp-3);
+  animation: fade-slide-in 0.3s ease;
+}
+
+.stair-sections-head {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: var(--sp-2);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.stair-latency {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  color: var(--text-dim);
+  background: var(--bg-surface);
+  padding: 0 4px;
+  border-radius: 3px;
+}
+
+.stair-section-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 2px 0;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+}
+
+.stair-section-rank {
+  color: var(--green);
+  font-weight: 700;
+  font-size: 0.6rem;
+  flex-shrink: 0;
+  min-width: 20px;
+}
+
+.stair-section-title {
+  color: var(--text-secondary);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stair-section-doc {
+  color: var(--text-dim);
+  font-size: 0.58rem;
+  flex-shrink: 0;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stair-section-chunks {
+  color: var(--violet);
+  font-size: 0.58rem;
+  flex-shrink: 0;
+  background: var(--violet-soft);
+  padding: 0 4px;
+  border-radius: 3px;
+}
+
+.stair-section-page {
+  color: var(--text-dim);
+  font-size: 0.56rem;
+  flex-shrink: 0;
+}
+
+.stair-stats-row {
+  display: flex;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+
+.stair-stat {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  background: var(--bg-surface);
+  padding: 1px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--border-subtle);
+}
+
+/* ── STAIR sections mini (inline in events) ── */
+.stair-sections-mini {
+  margin-top: var(--sp-1);
+  padding-left: var(--sp-2);
+  border-left: 2px solid rgba(52, 211, 153, 0.2);
+}
+
+.stair-section-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  padding: 1px 0;
+  color: var(--text-dim);
+}
+
+.stair-section-row .stair-section-rank {
+  font-size: 0.56rem;
+}
+
+.stair-section-row .stair-section-title {
+  font-size: 0.6rem;
+}
+
+.stair-section-row .stair-section-chunks {
+  font-size: 0.54rem;
+}
+
 /* ═══ Responsive ═══ */
 @media (max-width: 768px) {
   .sidebar {

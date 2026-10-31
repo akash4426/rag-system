@@ -415,6 +415,344 @@ function MetadataDisplay({ meta }) {
 }
 
 /* ═══════════════════════════════════════════
+   Live retrieval trace (SSE progress)
+   ═══════════════════════════════════════════ */
+const LIVE_STAGE_LABELS = {
+  request: 'Request',
+  query: 'Query',
+  pipeline: 'Pipeline',
+  routing: 'Controller',
+  structural_select: 'Section selection',
+  structural_expand: 'Structural expansion',
+  retriever: 'Retriever',
+  fusion: 'Fusion',
+  rerank: 'Rerank',
+  evidence: 'Evidence',
+  validation: 'Validation',
+  retry: 'Retry',
+  generation: 'Generation',
+  complete: 'Complete',
+  stream: 'Transport',
+};
+
+function liveEventChips(event) {
+  const details = event.details || {};
+  const chips = [];
+  const add = (text, kind = '') => {
+    if (text == null || text === '') return;
+    const value = String(text);
+    if (!chips.some((chip) => chip.text === value)) chips.push({ text: value, kind });
+  };
+
+  if (Array.isArray(details.retrievers)) add(details.retrievers.join(' + '), 'retrievers');
+  if (details.strategy) add(`strategy: ${details.strategy}`);
+  if (details.retriever && details.count != null) {
+    add(`${details.retriever}: ${details.count} chunk${Number(details.count) === 1 ? '' : 's'}`);
+  }
+  if (details.chunk_count != null) {
+    add(`${details.chunk_count} structural chunk${Number(details.chunk_count) === 1 ? '' : 's'}`);
+  }
+  if (details.fused_count != null) add(`${details.fused_count} fused`);
+  if (details.token_count != null) add(`${details.token_count} tokens`);
+  if (details.sufficient != null) {
+    add(details.sufficient ? 'sufficient' : 'insufficient', details.sufficient ? 'good' : 'warn');
+  }
+  if (details.coverage != null) add(`coverage ${(Number(details.coverage) * 100).toFixed(0)}%`);
+  if (details.provider) add(details.provider);
+  if (details.abstained) add('abstained', 'warn');
+  if (details.retries) add(`${details.retries} retr${Number(details.retries) === 1 ? 'y' : 'ies'}`);
+  if (Array.isArray(details.selected_sections)) {
+    details.selected_sections.slice(0, 4).forEach((section) => {
+      add(section.title || section.section_id, 'section');
+    });
+  }
+
+  return chips;
+}
+
+function LiveEvent({ event }) {
+  const stageLabel = LIVE_STAGE_LABELS[event.stage] || event.stage;
+  const chips = liveEventChips(event);
+  const isStairStage = event.stage === 'structural_select' || event.stage === 'structural_expand';
+  const isRetrieverStructural = event.stage === 'retriever' && event.details?.retriever === 'structural';
+
+  return (
+    <div className={`live-event ${event.status || 'info'} ${isStairStage || isRetrieverStructural ? 'stair-highlight' : ''}`}>
+      <span className={`live-event-marker ${isStairStage ? 'stair' : ''}`} />
+      <div className="live-event-main">
+        <div className="live-event-top">
+          <span className="live-event-stage">{stageLabel}</span>
+          {(isStairStage || isRetrieverStructural) && <span className="stair-inline-badge">STAIR</span>}
+          <span className="live-event-message">{event.message || 'Working…'}</span>
+        </div>
+        {chips.length > 0 && (
+          <div className="live-event-chips">
+            {chips.map((chip, index) => (
+              <span className={`live-chip ${chip.kind}`} key={`${chip.text}-${index}`}>
+                {chip.text}
+              </span>
+            ))}
+          </div>
+        )}
+        {event.stage === 'structural_select' && event.details?.reason && (
+          <p className="live-event-reason">{event.details.reason}</p>
+        )}
+        {event.stage === 'structural_select' && event.details?.model && (
+          <p className="live-event-model">model: {event.details.model}</p>
+        )}
+        {event.stage === 'structural_expand' && event.details?.selected_sections?.length > 0 && (
+          <div className="stair-sections-mini">
+            {event.details.selected_sections.map((s, i) => (
+              <div key={i} className="stair-section-row">
+                <span className="stair-section-rank">#{s.rank || i + 1}</span>
+                <span className="stair-section-title">{s.title || s.section_id}</span>
+                {s.chunk_count != null && <span className="stair-section-chunks">{s.chunk_count} chunks</span>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const STAIR_STEPS = [
+  { key: 'route', label: 'Route Query', icon: '⟐' },
+  { key: 'toc', label: 'Read ToC', icon: '📑' },
+  { key: 'select', label: 'LLM Select Sections', icon: '🎯' },
+  { key: 'expand', label: 'Expand Chunks', icon: '📦' },
+  { key: 'fuse', label: 'RRF Fuse', icon: '⚡' },
+];
+
+function deriveStairProgress(events) {
+  const steps = { route: 'pending', toc: 'pending', select: 'pending', expand: 'pending', fuse: 'pending' };
+  let strategy = null;
+  let selectedSections = [];
+  let structuralChunks = 0;
+  let fusedCount = 0;
+  let latencyMs = null;
+  let model = null;
+
+  for (const e of events) {
+    if (e.stage === 'routing') {
+      steps.route = 'done';
+      if ((e.details?.retrievers || []).includes('structural')) {
+        steps.toc = 'running';
+      }
+    }
+    if (e.stage === 'retriever' && e.details?.retriever === 'structural') {
+      if (e.status === 'running') steps.toc = 'running';
+      if (e.status === 'done' || e.status === 'error') {
+        steps.toc = 'done';
+        structuralChunks = e.details?.count || 0;
+        latencyMs = e.details?.latency_ms;
+      }
+    }
+    if (e.stage === 'structural_select') {
+      steps.toc = 'done';
+      if (e.status === 'running') steps.select = 'running';
+      if (e.status === 'done' || e.status === 'warning') {
+        steps.select = e.status === 'warning' ? 'warning' : 'done';
+        strategy = e.details?.strategy || strategy;
+        model = e.details?.model || model;
+        if (e.details?.selected_sections) selectedSections = e.details.selected_sections;
+      }
+    }
+    if (e.stage === 'structural_expand') {
+      steps.select = steps.select === 'pending' ? 'done' : steps.select;
+      if (e.status === 'done' || e.status === 'warning') {
+        steps.expand = e.status === 'warning' ? 'warning' : 'done';
+        structuralChunks = e.details?.chunk_count || structuralChunks;
+        if (e.details?.selected_sections) selectedSections = e.details.selected_sections;
+      } else {
+        steps.expand = 'running';
+      }
+    }
+    if (e.stage === 'fusion') {
+      steps.fuse = 'done';
+      fusedCount = e.details?.fused_count || 0;
+    }
+  }
+
+  return { steps, strategy, selectedSections, structuralChunks, fusedCount, latencyMs, model };
+}
+
+function StairPipelineViz({ events }) {
+  const { steps, strategy, selectedSections, structuralChunks, fusedCount, latencyMs, model } = deriveStairProgress(events);
+  const hasStair = Object.values(steps).some((s) => s !== 'pending') && steps.route === 'done';
+
+  if (!hasStair) return null;
+
+  return (
+    <div className="stair-pipeline">
+      <div className="stair-pipeline-head">
+        <span className="stair-pipeline-icon">🔍</span>
+        <span className="stair-pipeline-title">STAIR Retrieval Pipeline</span>
+        {strategy && <span className={`stair-strategy-badge ${strategy}`}>{strategy}</span>}
+        {model && <span className="stair-model-badge">{model}</span>}
+      </div>
+
+      <div className="stair-steps">
+        {STAIR_STEPS.map((step, idx) => {
+          const status = steps[step.key];
+          return (
+            <div key={step.key} className="stair-step-wrapper">
+              <div className={`stair-step ${status}`}>
+                <span className="stair-step-icon">{step.icon}</span>
+                <span className="stair-step-label">{step.label}</span>
+                {status === 'running' && <span className="stair-step-spinner" />}
+                {status === 'done' && <span className="stair-step-check">✓</span>}
+                {status === 'warning' && <span className="stair-step-warn">⚠</span>}
+              </div>
+              {idx < STAIR_STEPS.length - 1 && (
+                <span className={`stair-step-connector ${status === 'done' || status === 'warning' ? 'active' : ''}`} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {selectedSections.length > 0 && (
+        <div className="stair-selected-sections">
+          <div className="stair-sections-head">
+            Selected Sections ({selectedSections.length})
+            {latencyMs != null && <span className="stair-latency">{Math.round(latencyMs)}ms</span>}
+          </div>
+          {selectedSections.map((s, i) => (
+            <div key={i} className="stair-section-item">
+              <span className="stair-section-rank">#{s.rank || i + 1}</span>
+              <span className="stair-section-title">{s.title || s.section_id}</span>
+              {s.doc && <span className="stair-section-doc">{s.doc}</span>}
+              {s.chunk_count != null && <span className="stair-section-chunks">{s.chunk_count}ch</span>}
+              {s.page_start != null && <span className="stair-section-page">p.{s.page_start}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="stair-stats-row">
+        {structuralChunks > 0 && (
+          <span className="stair-stat">{structuralChunks} structural chunk{structuralChunks === 1 ? '' : 's'}</span>
+        )}
+        {fusedCount > 0 && (
+          <span className="stair-stat">{fusedCount} fused total</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function LiveTracePanel({ trace }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(interval);
+  }, []);
+
+  const events = trace?.events || [];
+  const elapsed = trace?.startedAt ? Math.max(0, now - trace.startedAt) : 0;
+  const structuralActive = events.some(
+    (event) =>
+      event.stage === 'structural_select' ||
+      event.stage === 'structural_expand' ||
+      (event.details?.retrievers || []).includes('structural'),
+  );
+
+  return (
+    <div className="live-trace" aria-live="polite">
+      <div className="live-trace-head">
+        <span className="live-pulse" />
+        <span className="live-trace-title">Live retrieval trace</span>
+        {structuralActive && <span className="live-stair-pill">STAIR-inspired</span>}
+        {trace?.mode && (
+          <span className={`live-mode ${trace.mode}`}>
+            {trace.mode === 'sah' ? 'SAH-RAG' : trace.mode}
+          </span>
+        )}
+        <span className="live-trace-timer">{(elapsed / 1000).toFixed(1)}s</span>
+      </div>
+
+      {structuralActive && <StairPipelineViz events={events} />}
+
+      <div className="live-trace-events">
+        {events.length === 0 ? (
+          <div className="live-event running">
+            <span className="live-event-marker" />
+            <div className="live-event-main">
+              <div className="live-event-top">
+                <span className="live-event-stage">Stream</span>
+                <span className="live-event-message">Waiting for the backend trace…</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          events.map((event, index) => (
+            <LiveEvent event={event} key={`${event.stage}-${event.ts}-${index}`} />
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function parseSsePayload(block) {
+  const data = block
+    .split('\n')
+    .filter((line) => line.startsWith('data:'))
+    .map((line) => line.slice(5).trimStart())
+    .join('\n');
+  if (!data) return null;
+  try {
+    return JSON.parse(data);
+  } catch {
+    return null;
+  }
+}
+
+function streamFallbackError(message) {
+  const error = new Error(message);
+  error.fallback = true;
+  return error;
+}
+
+async function readChatStream(response, onEvent) {
+  const contentType = response.headers.get('content-type') || '';
+  if (!contentType.includes('text/event-stream')) {
+    throw streamFallbackError('Live streaming is not available on this backend.');
+  }
+  const reader = response.body?.getReader();
+  if (!reader) throw streamFallbackError('The browser could not read the live stream.');
+
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let finalPayload = null;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n');
+
+    let boundary = buffer.indexOf('\n\n');
+    while (boundary !== -1) {
+      const block = buffer.slice(0, boundary);
+      buffer = buffer.slice(boundary + 2);
+      const payload = parseSsePayload(block);
+      if (payload?.type === 'progress') {
+        onEvent(payload);
+      } else if (payload?.type === 'final') {
+        finalPayload = payload.data;
+      } else if (payload?.type === 'error') {
+        throw new Error(payload.message || 'The retrieval stream failed.');
+      }
+      boundary = buffer.indexOf('\n\n');
+    }
+  }
+
+  if (!finalPayload) throw new Error('The stream ended before an answer was returned.');
+  return finalPayload;
+}
+
+/* ═══════════════════════════════════════════
    Typing Reveal Hook
    ═══════════════════════════════════════════ */
 function useTypingReveal(text, speed = 12) {
@@ -619,6 +957,7 @@ function App() {
   const [uploadStatus, setUploadStatus] = useState(null);
   const [copied, setCopied] = useState(false);
   const [sourceVersion, setSourceVersion] = useState(0);
+  const [liveTrace, setLiveTrace] = useState({ events: [], startedAt: 0, mode: null });
 
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -636,6 +975,14 @@ function App() {
 
   useEffect(() => { scrollToBottom(); }, [messages, isLoading, scrollToBottom]);
 
+  const recordLiveEvent = useCallback((event) => {
+    setLiveTrace((prev) => ({
+      ...prev,
+      mode: event.details?.mode || prev.mode,
+      events: [...prev.events, { ...event, receivedAt: Date.now() }].slice(-50),
+    }));
+  }, []);
+
   /* ── Send message ── */
   const sendMessage = async (text) => {
     if (!text.trim()) return;
@@ -643,16 +990,47 @@ function App() {
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
+    setLiveTrace({ events: [], startedAt: Date.now(), mode: null });
+
+    const payload = JSON.stringify({ query: text, session_id: sessionId });
 
     try {
-      const response = await fetch(`${apiUrl}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: text, session_id: sessionId }),
-      });
+      let data;
+      try {
+        const response = await fetch(`${apiUrl}/chat/stream`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload,
+        });
+        if (!response.ok) {
+          if ([404, 405, 501].includes(response.status)) {
+            throw streamFallbackError('Live streaming is unavailable.');
+          }
+          throw new Error(`Backend error (${response.status})`);
+        }
+        data = await readChatStream(response, recordLiveEvent);
+      } catch (streamError) {
+        if (!streamError.fallback) throw streamError;
+        recordLiveEvent({
+          stage: 'stream',
+          status: 'warning',
+          message: 'Live streaming is unavailable; using the standard request.',
+          details: {},
+          ts: Date.now() / 1000,
+        });
+        const response = await fetch(`${apiUrl}/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload,
+        });
+        if (!response.ok) throw new Error('Backend unreachable — is it running?');
+        data = await response.json();
+      }
 
-      if (!response.ok) throw new Error('Backend unreachable — is it running?');
-      const data = await response.json();
+      setLiveTrace((prev) => ({
+        ...prev,
+        mode: data.trace?.mode || prev.mode,
+      }));
 
       setMessages((prev) => [
         ...prev,
@@ -842,12 +1220,15 @@ function App() {
           )}
 
           {isLoading && (
-            <div className="loading-indicator">
-              <div className="loading-dots">
-                <span /><span /><span />
+            <>
+              <LiveTracePanel trace={liveTrace} />
+              <div className="loading-indicator">
+                <div className="loading-dots">
+                  <span /><span /><span />
+                </div>
+                Synthesizing…
               </div>
-              Synthesizing…
-            </div>
+            </>
           )}
           <div ref={messagesEndRef} />
         </div>

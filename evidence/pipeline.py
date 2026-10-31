@@ -15,6 +15,7 @@ from retrieval.adaptive import AdaptiveResult, AdaptiveRetriever
 from retrieval.types import Chunk
 from sah_config import SAHConfig
 from structure.store import StructureStore
+from utils.progress import ProgressCallback, emit_progress
 
 logger = logging.getLogger(__name__)
 
@@ -106,31 +107,86 @@ class EvidencePipeline:
         query: str,
         k: int | None = None,
         doc_ids: list[str] | None = None,
+        on_event: ProgressCallback | None = None,
     ) -> EvidenceResult:
         k = k or self.config.top_k
-        adaptive = self.adaptive.retrieve_adaptive(
-            query,
-            k=k,
-            doc_ids=doc_ids,
-            fusion_pool=max(k * 2, k) if self.config.rerank else k,
-        )
+        adaptive_kwargs = {
+            "k": k,
+            "doc_ids": doc_ids,
+            "fusion_pool": max(k * 2, k) if self.config.rerank else k,
+        }
+        if on_event is None:
+            adaptive = self.adaptive.retrieve_adaptive(query, **adaptive_kwargs)
+        else:
+            adaptive = self.adaptive.retrieve_adaptive(query, on_event=on_event, **adaptive_kwargs)
+
         primary = adaptive.chunks
         if self.config.rerank:
+            emit_progress(
+                on_event, "rerank", "running",
+                f"Cross-encoder reranking {len(primary)} candidate(s).",
+                candidates=len(primary),
+            )
             primary = self.reranker.rerank(query, primary, top_k=k)
+            emit_progress(
+                on_event, "rerank", "done",
+                f"Cross-encoder kept {len(primary)} evidence chunk(s).",
+                returned=len(primary),
+                model=self.config.reranker_model,
+            )
         else:
             primary = primary[:k]
+            emit_progress(
+                on_event, "rerank", "skipped",
+                "Cross-encoder reranking is disabled; keeping fused order.",
+                returned=len(primary),
+            )
 
         evidence = self.expander.expand(query, primary)
+        emit_progress(
+            on_event, "evidence", "done",
+            f"Packed {len(evidence.items)} evidence item(s) ({evidence.token_count} tokens).",
+            items=len(evidence.items),
+            token_count=evidence.token_count,
+            sections=evidence.sections,
+            truncated=evidence.truncated,
+        )
         initial_validation = None
         validation = None
         retries: list[dict[str, Any]] = []
 
         if self.config.evidence_validation:
+            emit_progress(
+                on_event, "validation", "running",
+                "Validating evidence sufficiency with the cross-encoder.",
+                attempt=0,
+            )
             validation = self.validator.validate(query, primary, evidence.context_text)
             initial_validation = validation
+            emit_progress(
+                on_event,
+                "validation",
+                "done" if validation.sufficient else "warning",
+                (
+                    "Evidence is sufficient."
+                    if validation.sufficient
+                    else "Evidence is insufficient; checking whether a retry can help."
+                ),
+                attempt=0,
+                sufficient=validation.sufficient,
+                coverage=round(validation.coverage, 3),
+                max_score=round(validation.max_score, 3),
+                missing_aspects=validation.missing_aspects,
+            )
 
             while not validation.sufficient and len(retries) < self.config.max_retries:
                 attempt = len(retries) + 1
+                emit_progress(
+                    on_event, "retry", "running",
+                    f"Evidence retry {attempt}: retrieving missing aspects.",
+                    attempt=attempt,
+                    missing_aspects=validation.missing_aspects,
+                )
                 if self.config.structure_guided_retry:
                     new_chunks, event = self.retrier.structure_guided(
                         query, validation.missing_aspects, primary, k=k, attempt=attempt
@@ -150,6 +206,13 @@ class EvidencePipeline:
                         }
                     )
                     retries.append(event)
+                    emit_progress(
+                        on_event, "retry", "warning",
+                        f"Evidence retry {attempt} produced no new chunks.",
+                        attempt=attempt,
+                        mode=event.get("mode"),
+                        skipped=True,
+                    )
                     break
 
                 combined = _merge_chunks(primary, new_chunks)
@@ -170,9 +233,29 @@ class EvidencePipeline:
                     }
                 )
                 retries.append(event)
+                emit_progress(
+                    on_event,
+                    "retry",
+                    "done" if validation.sufficient else "warning",
+                    (
+                        f"Evidence retry {attempt} made the evidence sufficient."
+                        if validation.sufficient
+                        else f"Evidence retry {attempt} completed; evidence is still insufficient."
+                    ),
+                    attempt=attempt,
+                    mode=event.get("mode"),
+                    new_chunks=len(new_chunks),
+                    sufficient_after=validation.sufficient,
+                    missing_aspects=validation.missing_aspects,
+                )
                 logger.info(
                     "Evidence retry %d (%s): sufficient=%s", attempt, event["mode"], validation.sufficient
                 )
+        else:
+            emit_progress(
+                on_event, "validation", "skipped",
+                "Evidence validation is disabled.",
+            )
 
         return EvidenceResult(
             chunks=primary,

@@ -1037,3 +1037,94 @@
 2026-10-31 12:04:53,495 - RAGSystem - INFO - [SAH Generation] Latency: 8.3363s
 2026-10-31 12:04:53,496 - RAGSystem - INFO - [Session: w8fgtpu6v4] Generated Response Length: 474 chars
 2026-10-31 12:04:53,497 - RAGSystem - INFO - [Total Request] Latency: 18.4288s
+2026-10-31 13:01:09,141 - RAGSystem - INFO - [Session: vja1xedm61] New Query: Compare topics across files
+2026-10-31 13:01:16,650 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-10-31 13:01:16,654 - RAGSystem - INFO - [Query Processing] Latency: 7.5124s
+2026-10-31 13:01:16,674 - retrieval.structural - WARNING - Structural selector unavailable: Ollama request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x32a843ed0>: Failed to establish a new connection: [Errno 61] Connection refused'))
+2026-10-31 13:01:20,507 - retrieval.adaptive - INFO - Adaptive retrieval: retrievers=['semantic', 'lexical', 'structural'] counts={'lexical': 2, 'structural': 2, 'semantic': 5} fused=5
+2026-10-31 13:01:20,515 - evidence.expander - INFO - Evidence expanded: items=5 tokens=619 budget=1800
+2026-10-31 13:01:20,516 - RAGSystem - INFO - [SAH Retrieval & Evidence] Latency: 3.8616s
+2026-10-31 13:01:20,519 - generation.answerer - WARNING - Grounded generation failed: Ollama request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x32a838dd0>: Failed to establish a new connection: [Errno 61] Connection refused'))
+2026-10-31 13:01:20,519 - generation.answerer - INFO - Grounded answer abstained: Generation model unavailable: Ollama request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x32a838dd0>: Failed to establish a new connection: [Errno 61] Connection refused'))
+2026-10-31 13:01:20,520 - RAGSystem - INFO - [SAH Generation] Latency: 0.0039s
+2026-10-31 13:01:20,520 - RAGSystem - INFO - [Session: vja1xedm61] Generated Response Length: 0 chars
+2026-10-31 13:01:20,520 - RAGSystem - INFO - [Total Request] Latency: 11.3790s
+2026-10-31 13:01:49,290 - RAGSystem - INFO - [Session: vja1xedm61] New Query: Explain about Syntaax tree
+2026-10-31 13:01:49,733 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-10-31 13:01:49,735 - RAGSystem - INFO - [Query Processing] Latency: 0.4445s
+2026-10-31 13:01:50,411 - retrieval.adaptive - INFO - Adaptive retrieval: retrievers=['semantic', 'lexical', 'structural'] counts={'lexical': 5, 'structural': 3, 'semantic': 5} fused=5
+2026-10-31 13:01:50,414 - evidence.expander - INFO - Evidence expanded: items=5 tokens=628 budget=1800
+2026-10-31 13:01:50,414 - RAGSystem - INFO - [SAH Retrieval & Evidence] Latency: 0.6790s
+2026-10-31 13:01:50,419 - generation.answerer - WARNING - Grounded generation failed: Ollama request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x32925f790>: Failed to establish a new connection: [Errno 61] Connection refused'))
+2026-10-31 13:01:50,419 - generation.answerer - INFO - Grounded answer abstained: Generation model unavailable: Ollama request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x32925f790>: Failed to establish a new connection: [Errno 61] Connection refused'))
+2026-10-31 13:01:50,419 - RAGSystem - INFO - [SAH Generation] Latency: 0.0049s
+2026-10-31 13:01:50,419 - RAGSystem - INFO - [Session: vja1xedm61] Generated Response Length: 0 chars
+2026-10-31 13:01:50,419 - RAGSystem - INFO - [Total Request] Latency: 1.1295s
+2026-10-31 13:02:08,182 - RAGSystem - INFO - [Session: vja1xedm61] New Query: explain behaviour and assuems 
+2026-10-31 13:02:09,122 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-10-31 13:02:09,124 - RAGSystem - INFO - [Query Processing] Latency: 0.9412s
+2026-10-31 13:02:09,894 - retrieval.adaptive - INFO - Adaptive retrieval: retrievers=['semantic', 'lexical', 'structural'] counts={'lexical': 5, 'structural': 2, 'semantic': 5} fused=5
+2026-10-31 13:02:09,898 - evidence.expander - INFO - Evidence expanded: items=5 tokens=694 budget=1800
+2026-10-31 13:02:09,899 - RAGSystem - INFO - [SAH Retrieval & Evidence] Latency: 0.7746s
+2026-10-31 13:02:09,903 - generation.answerer - WARNING - Grounded generation failed: Ollama request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x32a85c9d0>: Failed to establish a new connection: [Errno 61] Connection refused'))
+2026-10-31 13:02:09,903 - generation.answerer - INFO - Grounded answer abstained: Generation model unavailable: Ollama request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x32a85c9d0>: Failed to establish a new connection: [Errno 61] Connection refused'))
+2026-10-31 13:02:09,903 - RAGSystem - INFO - [SAH Generation] Latency: 0.0047s
+2026-10-31 13:02:09,903 - RAGSystem - INFO - [Session: vja1xedm61] Generated Response Length: 0 chars
+2026-10-31 13:02:09,903 - RAGSystem - INFO - [Total Request] Latency: 1.7214s
+2026-10-31 13:02:39,815 - RAGSystem - INFO - [Session: vja1xedm61] New Query: Explain ACSL
+2026-10-31 13:02:40,145 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-10-31 13:02:40,149 - RAGSystem - INFO - [Query Processing] Latency: 0.3331s
+2026-10-31 13:02:40,708 - retrieval.adaptive - INFO - Adaptive retrieval: retrievers=['semantic', 'lexical', 'structural'] counts={'lexical': 3, 'structural': 3, 'semantic': 5} fused=5
+2026-10-31 13:02:40,713 - evidence.expander - INFO - Evidence expanded: items=5 tokens=940 budget=1800
+2026-10-31 13:02:40,713 - RAGSystem - INFO - [SAH Retrieval & Evidence] Latency: 0.5644s
+2026-10-31 13:02:40,717 - generation.answerer - WARNING - Grounded generation failed: Ollama request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x32a80eb90>: Failed to establish a new connection: [Errno 61] Connection refused'))
+2026-10-31 13:02:40,718 - generation.answerer - INFO - Grounded answer abstained: Generation model unavailable: Ollama request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x32a80eb90>: Failed to establish a new connection: [Errno 61] Connection refused'))
+2026-10-31 13:02:40,718 - RAGSystem - INFO - [SAH Generation] Latency: 0.0044s
+2026-10-31 13:02:40,718 - RAGSystem - INFO - [Session: vja1xedm61] Generated Response Length: 0 chars
+2026-10-31 13:02:40,718 - RAGSystem - INFO - [Total Request] Latency: 0.9028s
+2026-10-31 13:03:46,461 - RAGSystem - INFO - [Session: re1naz9al8] New Query: Explain ACSL
+2026-10-31 13:03:47,165 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-10-31 13:03:47,168 - RAGSystem - INFO - [Query Processing] Latency: 0.7066s
+2026-10-31 13:03:49,177 - retrieval.adaptive - INFO - Adaptive retrieval: retrievers=['semantic', 'lexical', 'structural'] counts={'lexical': 3, 'structural': 3, 'semantic': 5} fused=5
+2026-10-31 13:03:49,183 - evidence.expander - INFO - Evidence expanded: items=5 tokens=940 budget=1800
+2026-10-31 13:03:49,183 - RAGSystem - INFO - [SAH Retrieval & Evidence] Latency: 2.0155s
+2026-10-31 13:04:02,481 - RAGSystem - INFO - [SAH Generation] Latency: 13.2971s
+2026-10-31 13:04:02,483 - RAGSystem - INFO - [Session: re1naz9al8] Generated Response Length: 368 chars
+2026-10-31 13:04:02,483 - RAGSystem - INFO - [Total Request] Latency: 16.0229s
+2026-10-31 13:09:56,637 - pinecone_plugin_interface.logging - INFO - Discovering subpackages in _NamespacePath(['/opt/homebrew/Caskroom/miniforge/base/envs/rag_env/lib/python3.11/site-packages/pinecone_plugins'])
+2026-10-31 13:09:56,638 - pinecone_plugin_interface.logging - INFO - Looking for plugins in pinecone_plugins.inference
+2026-10-31 13:09:56,646 - pinecone_plugin_interface.logging - INFO - Installing plugin inference into Pinecone
+2026-10-31 13:10:00,262 - pinecone_plugin_interface.logging - INFO - Discovering subpackages in _NamespacePath(['/opt/homebrew/Caskroom/miniforge/base/envs/rag_env/lib/python3.11/site-packages/pinecone_plugins'])
+2026-10-31 13:10:00,263 - pinecone_plugin_interface.logging - INFO - Looking for plugins in pinecone_plugins.inference
+2026-10-31 13:10:04,919 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2026-10-31 13:10:09,468 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2026-10-31 13:10:10,001 - pinecone_plugin_interface.logging - INFO - Discovering subpackages in _NamespacePath(['/opt/homebrew/Caskroom/miniforge/base/envs/rag_env/lib/python3.11/site-packages/pinecone_plugins'])
+2026-10-31 13:10:10,003 - pinecone_plugin_interface.logging - INFO - Looking for plugins in pinecone_plugins.inference
+2026-10-31 13:10:10,003 - pinecone_plugin_interface.logging - INFO - Installing plugin inference into Pinecone
+2026-10-31 13:10:11,643 - pinecone_plugin_interface.logging - INFO - Discovering subpackages in _NamespacePath(['/opt/homebrew/Caskroom/miniforge/base/envs/rag_env/lib/python3.11/site-packages/pinecone_plugins'])
+2026-10-31 13:10:11,643 - pinecone_plugin_interface.logging - INFO - Looking for plugins in pinecone_plugins.inference
+2026-10-31 13:10:12,416 - sentence_transformers.cross_encoder.CrossEncoder - INFO - Use pytorch device: mps
+2026-10-31 13:10:12,709 - pinecone_plugin_interface.logging - INFO - Discovering subpackages in _NamespacePath(['/opt/homebrew/Caskroom/miniforge/base/envs/rag_env/lib/python3.11/site-packages/pinecone_plugins'])
+2026-10-31 13:10:12,709 - pinecone_plugin_interface.logging - INFO - Looking for plugins in pinecone_plugins.inference
+2026-10-31 13:10:12,709 - pinecone_plugin_interface.logging - INFO - Installing plugin inference into Pinecone
+2026-10-31 13:10:13,781 - pinecone_plugin_interface.logging - INFO - Discovering subpackages in _NamespacePath(['/opt/homebrew/Caskroom/miniforge/base/envs/rag_env/lib/python3.11/site-packages/pinecone_plugins'])
+2026-10-31 13:10:13,782 - pinecone_plugin_interface.logging - INFO - Looking for plugins in pinecone_plugins.inference
+2026-10-31 13:10:29,347 - RAGSystem - INFO - [Session: sx43qjc0ny] New Query: Explain about behaviour and assumes 
+2026-10-31 13:10:30,140 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-10-31 13:10:30,143 - RAGSystem - INFO - [Query Processing] Latency: 0.7953s
+2026-10-31 13:10:30,172 - retrieval.structural - INFO - Ollama is now available for structural selection.
+2026-10-31 13:10:40,191 - retrieval.adaptive - INFO - Adaptive retrieval: retrievers=['semantic', 'lexical', 'structural'] counts={'lexical': 5, 'semantic': 5, 'structural': 3} fused=5
+2026-10-31 13:10:40,198 - evidence.expander - INFO - Evidence expanded: items=5 tokens=870 budget=1800
+2026-10-31 13:10:40,198 - RAGSystem - INFO - [SAH Retrieval & Evidence] Latency: 10.0551s
+2026-10-31 13:10:49,628 - RAGSystem - INFO - [SAH Generation] Latency: 9.4295s
+2026-10-31 13:10:49,628 - RAGSystem - INFO - [Session: sx43qjc0ny] Generated Response Length: 507 chars
+2026-10-31 13:10:49,628 - RAGSystem - INFO - [Total Request] Latency: 20.2812s
+2026-10-31 13:11:19,051 - RAGSystem - INFO - [Session: sx43qjc0ny] New Query: Explain about complete and disjoint behaviors
+2026-10-31 13:11:19,489 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-10-31 13:11:19,492 - RAGSystem - INFO - [Query Processing] Latency: 0.4399s
+2026-10-31 13:11:29,504 - retrieval.adaptive - INFO - Adaptive retrieval: retrievers=['semantic', 'lexical', 'structural'] counts={'lexical': 5, 'semantic': 5, 'structural': 3} fused=5
+2026-10-31 13:11:29,506 - evidence.expander - INFO - Evidence expanded: items=5 tokens=923 budget=1800
+2026-10-31 13:11:29,506 - RAGSystem - INFO - [SAH Retrieval & Evidence] Latency: 10.0143s
+2026-10-31 13:11:38,027 - RAGSystem - INFO - [SAH Generation] Latency: 8.5210s
+2026-10-31 13:11:38,028 - RAGSystem - INFO - [Session: sx43qjc0ny] Generated Response Length: 474 chars
+2026-10-31 13:11:38,028 - RAGSystem - INFO - [Total Request] Latency: 18.9767s

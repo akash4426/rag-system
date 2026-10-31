@@ -14,6 +14,7 @@ from retrieval.fusion import rrf_fuse
 from retrieval.structural import StructuralRetriever
 from retrieval.types import Chunk
 from sah_config import SAHConfig
+from utils.progress import ProgressCallback, emit_progress
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +75,7 @@ class AdaptiveRetriever:
         k: int | None = None,
         doc_ids: list[str] | None = None,
         fusion_pool: int | None = None,
+        on_event: ProgressCallback | None = None,
     ) -> AdaptiveResult:
         decision = self._route(query)
         depth = k or decision.k
@@ -82,16 +84,46 @@ class AdaptiveRetriever:
         latencies: dict[str, float] = {}
         counts: dict[str, int] = {}
 
+        emit_progress(
+            on_event,
+            "routing",
+            "done",
+            f"Retrievers: {' + '.join(decision.retrievers)}",
+            retrievers=list(decision.retrievers),
+            complexity=decision.complexity,
+            k=depth,
+            adaptive=self.config.adaptive_controller,
+            mode="sah",
+            reason=decision.reason,
+            signals=decision.signals,
+        )
+
         def run_semantic() -> list[Chunk]:
+            emit_progress(
+                on_event, "retriever", "running",
+                "Dense semantic retrieval started.", retriever="semantic",
+            )
             return self.baseline.retrieve_dense(query, k=depth)
 
         def run_lexical() -> list[Chunk]:
+            emit_progress(
+                on_event, "retriever", "running",
+                "BM25 lexical retrieval started.", retriever="lexical",
+            )
             return self.baseline.retrieve_sparse(query, k=depth)
 
         def run_structural() -> Any:
             if not self.structural:
                 return None
-            return self.structural.retrieve_structural(query, k=depth, doc_ids=doc_ids)
+            emit_progress(
+                on_event, "retriever", "running",
+                "STAIR-inspired structural retrieval started.", retriever="structural",
+            )
+            if on_event is None:
+                return self.structural.retrieve_structural(query, k=depth, doc_ids=doc_ids)
+            return self.structural.retrieve_structural(
+                query, k=depth, doc_ids=doc_ids, on_event=on_event
+            )
 
         tasks = {}
         submitted_at = {}
@@ -118,6 +150,14 @@ class AdaptiveRetriever:
                     logger.warning("Retriever %s failed: %s", name, exc)
                     errors[name] = str(exc)
                     counts[name] = 0
+                    emit_progress(
+                        on_event,
+                        "retriever",
+                        "error",
+                        f"{name} retrieval failed: {exc}",
+                        retriever=name,
+                        count=0,
+                    )
                     continue
                 latencies[name] = (time.perf_counter() - submitted_at[future]) * 1000.0
                 if name == "structural":
@@ -126,20 +166,47 @@ class AdaptiveRetriever:
                 else:
                     result_lists[name] = value or []
                 counts[name] = len(result_lists[name])
+                emit_progress(
+                    on_event,
+                    "retriever",
+                    "done",
+                    f"{name} returned {counts[name]} chunk(s).",
+                    retriever=name,
+                    count=counts[name],
+                    latency_ms=round(latencies[name], 1),
+                )
 
         if not result_lists:
             # Defensive fallback for a total semantic failure.
             try:
                 result_lists["semantic"] = self.baseline.retrieve_dense(query, k=depth)
                 counts["semantic"] = len(result_lists["semantic"])
+                emit_progress(
+                    on_event, "retriever", "warning",
+                    f"semantic fallback returned {counts['semantic']} chunk(s).",
+                    retriever="semantic", count=counts["semantic"],
+                )
             except Exception as exc:
                 errors["semantic"] = str(exc)
+                emit_progress(
+                    on_event, "retriever", "error",
+                    f"semantic fallback failed: {exc}",
+                    retriever="semantic", count=0,
+                )
 
         pool_size = fusion_pool or max(depth, self.config.top_k)
         fused = rrf_fuse(
             result_lists,
             top_k=pool_size,
             weights={"semantic": 1.0, "lexical": 1.0, "structural": 1.15},
+        )
+        emit_progress(
+            on_event,
+            "fusion",
+            "done",
+            f"Reciprocal rank fusion produced {len(fused)} candidate(s).",
+            fused_count=len(fused),
+            counts=counts,
         )
 
         result = AdaptiveResult(

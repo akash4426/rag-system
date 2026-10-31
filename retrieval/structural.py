@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 import re
+import time
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -17,6 +18,7 @@ from retrieval.ollama_client import OllamaClient, OllamaUnavailable, parse_json_
 from retrieval.types import Chunk
 from structure.store import StructureStore
 from sah_config import SAHConfig
+from utils.progress import ProgressCallback, emit_progress
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +58,11 @@ class StructuralRetriever:
             timeout=self.config.ollama_timeout,
         )
         self._available: bool | None = None
+        self._available_checked_at: float = 0.0
         self._max_toc_sections = 150
+        # Re-check Ollama availability every 30 seconds after a failure so
+        # the system auto-recovers when Ollama comes back up.
+        self._recheck_interval: float = 30.0
 
     # ---------------------------------------------------------------- ToC view
     def _documents(self, doc_ids: list[str] | None) -> list[dict[str, Any]]:
@@ -159,19 +165,71 @@ TABLE OF CONTENTS:
             return [section_id for _, section_id in scored[:top_n]]
         return list(leaf_map)[:top_n]
 
+    @staticmethod
+    def _selection_event(
+        callback: ProgressCallback | None,
+        selected_ids: list[str],
+        leaf_map: dict[str, dict[str, Any]],
+        info: dict[str, Any],
+        model: str,
+    ) -> None:
+        sections = [
+            {
+                "section_id": section_id,
+                "title": leaf_map.get(section_id, {}).get("title"),
+                "doc": leaf_map.get(section_id, {}).get("doc"),
+            }
+            for section_id in selected_ids
+        ]
+        strategy = info.get("strategy", "unknown")
+        emit_progress(
+            callback,
+            "structural_select",
+            "done" if strategy == "llm" else "warning",
+            (
+                f"STAIR-inspired selector chose {len(sections)} section(s) with {model}."
+                if strategy == "llm"
+                else f"Structural selector used {strategy}: {len(sections)} section(s)."
+            ),
+            strategy=strategy,
+            selected_sections=sections,
+            retries=int(info.get("retries", 0)),
+            reason=info.get("reason", ""),
+            model=model,
+        )
+
     # --------------------------------------------------------------- selection
     def select_sections(
         self,
         query: str,
         doc_ids: list[str] | None = None,
         top_n: int | None = None,
+        on_event: ProgressCallback | None = None,
     ) -> tuple[list[str], dict[str, Any]]:
         """Choose leaf section IDs, validating every model output."""
         top_n = top_n or self.config.structural_top_n
         documents = self._documents(doc_ids)
         toc, leaf_map = self._render_toc(documents)
         if not leaf_map:
+            emit_progress(
+                on_event,
+                "structural_select",
+                "error",
+                "No stored sections are available for the requested documents.",
+                documents=[document.get("doc_id") for document in documents],
+            )
             return [], {"strategy": "no_sections", "reason": "No stored sections for the requested documents."}
+
+        emit_progress(
+            on_event,
+            "structural_select",
+            "running",
+            f"STAIR-inspired selector is reading {len(leaf_map)} leaf sections.",
+            documents=[document.get("doc_id") for document in documents],
+            leaf_sections=len(leaf_map),
+            top_n=top_n,
+            model=self.config.ollama_model,
+        )
 
         prompt = self._build_prompt(query, toc, top_n)
         valid_ids = set(leaf_map)
@@ -179,8 +237,14 @@ TABLE OF CONTENTS:
         raw = ""
         parsed_ok = False
 
-        if self._available is None:
+        if self._available is None or (
+            self._available is False
+            and (time.time() - self._available_checked_at) >= self._recheck_interval
+        ):
             self._available = self.llm.is_available()
+            self._available_checked_at = time.time()
+            if self._available:
+                logger.info("Ollama is now available for structural selection.")
         if self._available:
             for attempt in range(2):
                 attempts = attempt
@@ -189,6 +253,7 @@ TABLE OF CONTENTS:
                 except OllamaUnavailable as exc:
                     logger.warning("Structural selector unavailable: %s", exc)
                     self._available = False
+                    self._available_checked_at = time.time()
                     break
                 selected, parsed_ok = self._parse_ids(raw, valid_ids, top_n)
                 if parsed_ok:
@@ -200,6 +265,7 @@ TABLE OF CONTENTS:
                             "raw_response": raw[:2000],
                             "documents": [doc["doc_id"] for doc in documents],
                         }
+                        self._selection_event(on_event, selected, leaf_map, info, self.config.ollama_model)
                         return selected, info
                     break
                 logger.warning("Malformed structural JSON (attempt %d); retrying once.", attempt + 1)
@@ -224,6 +290,7 @@ TABLE OF CONTENTS:
 
         selected = self._keyword_fallback(query, leaf_map, top_n)
         info["selected_sections"] = selected
+        self._selection_event(on_event, selected, leaf_map, info, self.config.ollama_model)
         return selected, info
 
     # --------------------------------------------------------------- expansion
@@ -233,9 +300,12 @@ TABLE OF CONTENTS:
         k: int = 5,
         doc_ids: list[str] | None = None,
         top_n: int | None = None,
+        on_event: ProgressCallback | None = None,
     ) -> StructuralResult:
         """Select sections and expand their chunks with rank-based scores."""
-        selected_ids, info = self.select_sections(query, doc_ids=doc_ids, top_n=top_n)
+        selected_ids, info = self.select_sections(
+            query, doc_ids=doc_ids, top_n=top_n, on_event=on_event
+        )
         sections = [self.store.get_section(section_id) for section_id in selected_ids]
         sections = [section for section in sections if section]
         selected_meta: list[dict[str, Any]] = []
@@ -283,8 +353,24 @@ TABLE OF CONTENTS:
             )
 
         chunks.sort(key=lambda chunk: (-chunk.score, chunk.chunk_id))
+        returned_chunks = chunks[:k]
+        emit_progress(
+            on_event,
+            "structural_expand",
+            "done" if returned_chunks else "warning",
+            (
+                f"Expanded {len(sections)} section(s) into {len(returned_chunks)} structural chunk(s)."
+                if returned_chunks
+                else f"Expanded {len(sections)} section(s), but no structural chunks were available."
+            ),
+            selected_sections=selected_meta,
+            chunk_count=len(returned_chunks),
+            matched_chunks=len(chunks),
+            strategy=info.get("strategy", "unknown"),
+            retries=int(info.get("retries", 0)),
+        )
         return StructuralResult(
-            chunks=chunks[:k],
+            chunks=returned_chunks,
             selected_sections=selected_meta,
             strategy=info.get("strategy", "unknown"),
             raw_response=info.get("raw_response", ""),

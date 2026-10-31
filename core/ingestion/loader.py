@@ -27,7 +27,7 @@ class DocumentLoader:
                 continue
             
             try:
-                if filename.endswith(".txt"):
+                if filename.endswith((".txt", ".md", ".markdown")):
                     loader = TextLoader(filepath, encoding='utf-8')
                     docs = loader.load()
                     documents.extend(docs)
@@ -37,12 +37,32 @@ class DocumentLoader:
                     docs = loader.load()
                     documents.extend(docs)
                     print(f"  ✓ Loaded {filename}: {len(docs)} page(s)")
+                elif filename.endswith(".docx"):
+                    docs = self._load_docx(filepath)
+                    documents.extend(docs)
+                    print(f"  ✓ Loaded {filename}: {len(docs)} paragraph batch(es)")
             except Exception as e:
                 print(f"  ⚠ Warning: Failed to load {filename}: {str(e)}")
                 # Continue with other files
                 continue
         
         return documents
+
+    @staticmethod
+    def _load_docx(filepath: str) -> List[Document]:
+        """Load DOCX paragraphs into one legacy Document (no page numbers)."""
+        from docx import Document as DocxDocument
+
+        docx = DocxDocument(filepath)
+        paragraphs = [paragraph.text.strip() for paragraph in docx.paragraphs if paragraph.text.strip()]
+        for table in docx.tables:
+            for row in table.rows:
+                cells = [cell.text.strip() for cell in row.cells]
+                if any(cells):
+                    paragraphs.append(" | ".join(cells))
+        if not paragraphs:
+            raise ValueError(f"No extractable text in {filepath}")
+        return [Document(page_content="\n\n".join(paragraphs), metadata={"source": filepath, "page": 0})]
 
     def load_single_document(self, filepath: str) -> List[Document]:
         """Load a single document from a file path."""
@@ -55,12 +75,14 @@ class DocumentLoader:
             raise ValueError(f"Path is not a file: {filepath}")
         
         try:
-            if filepath.endswith(".txt"):
+            if filepath.endswith((".txt", ".md", ".markdown")):
                 loader = TextLoader(filepath, encoding='utf-8')
                 documents = loader.load()
             elif filepath.endswith(".pdf"):
                 loader = PyPDFLoader(filepath)
                 documents = loader.load()
+            elif filepath.endswith(".docx"):
+                documents = self._load_docx(filepath)
             else:
                 raise ValueError(f"Unsupported file format: {filepath}")
             

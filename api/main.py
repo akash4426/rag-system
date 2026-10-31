@@ -28,6 +28,9 @@ from core.generation.memory import MemoryModule
 from utils.observability import SystemLogger
 from core.ingestion.indexer import IndexBuilder
 from core.ingestion.storage import Storage
+from sah_config import SAHConfig
+from structure.ingest import ingest_document
+from structure.store import StructureStore
 
 app = FastAPI(title="23-Component RAG API")
 
@@ -61,6 +64,13 @@ formatter = ResponseFormatter()
 # Storage backend (Pinecone or fallback)
 storage = Storage(use_pinecone=True)
 
+# SAH-RAG structure store (features are individually switchable)
+sah_config = SAHConfig.from_env()
+structure_store = StructureStore(
+    db_path=sah_config.db_path,
+    json_dir=sah_config.structure_json_dir,
+)
+
 # Simple in-memory session store
 sessions = {}
 
@@ -80,6 +90,8 @@ async def startup_event():
         print("✓ Vector DB: In-Memory (Development)")
     print("✓ LLM: OpenAI")
     print("✓ Embeddings: Sentence-Transformers")
+    stats = structure_store.stats()
+    print(f"✓ Structure store: {stats['documents']} docs, {stats['sections']} sections, {stats['chunks']} chunks")
     print("="*60 + "\n")
 
 @app.get("/health")
@@ -231,6 +243,25 @@ async def upload_file(file: UploadFile = File(...)):
         
         # Log success
         logger.log_upload(filename, len(chunks))
+
+        # Build the SAH-RAG section tree without breaking legacy indexing.
+        structure_info = None
+        if sah_config.structure_enabled:
+            try:
+                result = ingest_document(file_path, structure_store, existing_chunks=chunks)
+                structure_info = {
+                    "doc_id": result["doc_id"],
+                    "strategy": result["strategy"],
+                    "sections": result["sections"],
+                    "chunks": result["chunks"],
+                }
+                print(
+                    f"  ✓ Structure: {result['strategy']} | "
+                    f"{result['sections']} sections | {result['chunks']} chunks"
+                )
+            except Exception as e:
+                logger.log_error(f"Structure extraction error for {filename}: {str(e)}")
+                print(f"  ⚠ Structure extraction failed (legacy index intact): {str(e)}")
         
         print(f"✅ Successfully indexed {filename}: {len(chunks)} chunks\n")
         
@@ -238,7 +269,8 @@ async def upload_file(file: UploadFile = File(...)):
             "status": "success",
             "message": f"Successfully uploaded and indexed {filename}",
             "chunks": len(chunks),
-            "filename": filename
+            "filename": filename,
+            "structure": structure_info,
         }
         
     except Exception as e:
@@ -253,6 +285,28 @@ async def upload_file(file: UploadFile = File(...)):
             status_code=500,
             detail=error_msg
         )
+
+# ==========================================
+# Structure / source explorer endpoints
+# ==========================================
+@app.get("/documents")
+def list_documents():
+    """List indexed documents and their section counts."""
+    return {"documents": structure_store.list_documents(), "stats": structure_store.stats()}
+
+@app.get("/documents/{doc_id}/structure")
+def document_structure(doc_id: str):
+    """Return a document's section tree and chunk-to-section mapping."""
+    document = structure_store.get_document(doc_id)
+    if not document:
+        raise HTTPException(status_code=404, detail=f"Unknown document: {doc_id}")
+    sections = structure_store.get_sections(doc_id)
+    chunks = [
+        chunk
+        for section in sections
+        for chunk in structure_store.get_chunks_for_section(section["section_id"])
+    ]
+    return {"document": document, "sections": sections, "chunks": chunks}
 
 # ==========================================
 # Frontend Serving (Monolithic Deployment)

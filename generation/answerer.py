@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 
 from evidence.types import EvidenceSet, ValidationResult
-from generation.claims import split_claim_records
+from generation.claims import split_claim_records, strip_citation_markers
 from generation.generator import GroundedGenerator
 from generation.prompt import INSUFFICIENT_SENTINEL
 from generation.types import Citation, Claim, GroundedAnswer
@@ -123,6 +123,15 @@ class GroundedAnswerer:
             Claim(text=text, citations=citations)
             for text, citations in split_claim_records(raw)
         ]
+        deduped: list[Claim] = []
+        seen: set[str] = set()
+        for claim in claims:
+            key = " ".join(strip_citation_markers(claim.text).lower().split())
+            if not key or key in seen:
+                continue
+            seen.add(key)
+            deduped.append(claim)
+        claims = deduped
         if not claims:
             return self._abstain(
                 query,

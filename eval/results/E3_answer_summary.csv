@@ -1,0 +1,2 @@
+recall@5,precision@5,mrr,ndcg@5,latency_ms,answer_f1,answer_similarity,faithfulness,citation_accuracy,citation_precision,citation_coverage,decision_accuracy,false_abstention_rate,unanswerable_abstention_rate,retry_count,retrieval_ms,generation_ms,verification_ms,answer_tokens,prompt_tokens,evidence_tokens,n_queries
+0.8,0.36000000000000004,0.7,0.725326695905948,10998.369691800326,0.26715299165547923,0.7810246000413937,1.0,1.0,1.0,1.0,1.0,0.0,1.0,0.0,1634.3019586289302,9014.45491660852,349.1336999926716,68.4,756.2,605.0,5.0

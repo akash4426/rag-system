@@ -133,6 +133,18 @@ def test_verification_flag_is_switchable():
     assert result.claims[0].supported
 
 
+def test_answerer_deduplicates_repeated_claims():
+    response = (
+        "Three-address code uses one operator [E1]. "
+        "Three-address code uses one operator [E1]."
+    )
+    answerer, _ = make_answerer(response)
+    result = answerer.answer("three-address code", make_evidence())
+    assert not result.abstained
+    assert len(result.claims) == 1
+    assert result.answer.count("Three-address") == 1
+
+
 def test_e5_experiment_enables_generation_and_verification():
     config = config_for_experiment("E5", SAHConfig())
     assert config.grounded_generation and config.citation_verification

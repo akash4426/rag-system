@@ -1,0 +1,37 @@
+[
+  {
+    "question": "What are the advantages of using an intermediate language?",
+    "doc": "18. INTERMEDIATE CODE GENERATION.pdf",
+    "gold_section": "Advantages of Using an Intermediate Language",
+    "answerable": true,
+    "gold_answer": "It simplifies retargeting and portability by separating the front end from machine-specific code generation."
+  },
+  {
+    "question": "What is three-address code?",
+    "doc": "18. INTERMEDIATE CODE GENERATION.pdf",
+    "gold_section": "Three-Address Code",
+    "answerable": true,
+    "gold_answer": "Three-address code is an intermediate representation in which each instruction has at most one operator and up to three operands."
+  },
+  {
+    "question": "What are quadruples in intermediate code representation?",
+    "doc": "18. INTERMEDIATE CODE GENERATION.pdf",
+    "gold_section": "Quadruples",
+    "answerable": true,
+    "gold_answer": "A quadruple stores an operation, two operands, and a result field."
+  },
+  {
+    "question": "Which representation uses pointers to triples and is called indirect triples?",
+    "doc": "18. INTERMEDIATE CODE GENERATION.pdf",
+    "gold_section": "Indirect Triples",
+    "answerable": true,
+    "gold_answer": "Indirect triples store a list of pointers to triples, allowing reordering without rewriting the triples."
+  },
+  {
+    "question": "What does the document say about quantum compilers?",
+    "doc": "18. INTERMEDIATE CODE GENERATION.pdf",
+    "gold_section": "None",
+    "answerable": false,
+    "gold_answer": ""
+  }
+]

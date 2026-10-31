@@ -220,7 +220,9 @@ async def upload_file(file: UploadFile = File(...)):
         # Update BM25 index
         try:
             texts = [chunk.page_content for chunk in chunks]
-            tfidf.add_documents(texts)
+            ids = [chunk.metadata.get("chunk_id", "") for chunk in chunks]
+            metadatas = [chunk.metadata for chunk in chunks]
+            tfidf.add_documents(texts, ids=ids, metadatas=metadatas)
             print(f"  ✓ BM25 index updated with {len(texts)} texts")
         except Exception as e:
             logger.log_error(f"BM25 update error: {str(e)}")

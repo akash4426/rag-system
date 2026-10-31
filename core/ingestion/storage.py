@@ -63,6 +63,24 @@ class Storage:
         else:
             return self.memory_texts.copy()
 
+    def get_all_records(self) -> List[Dict[str, Any]]:
+        """Fetch id/text/metadata records so BM25 keeps chunk provenance."""
+        if self.use_pinecone:
+            if hasattr(self.backend, "get_all_records"):
+                return self.backend.get_all_records()
+            return [
+                {"id": "", "text": text, "metadata": {}}
+                for text in self.backend.get_all_documents()
+            ]
+        return [
+            {
+                "id": doc_id,
+                "text": data.get("text", ""),
+                "metadata": dict(data.get("metadata", {})),
+            }
+            for doc_id, data in self.memory_vectors.items()
+        ]
+
     def query(self, query_embedding: List[float], top_k: int = 5) -> list:
         """Query for similar vectors."""
         if self.use_pinecone:

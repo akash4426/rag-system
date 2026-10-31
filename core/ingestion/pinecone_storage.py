@@ -93,45 +93,48 @@ class PineconeStorage:
             print(f"Pinecone upsert failed: {e}")
             raise
 
-    def get_all_documents(self) -> List[str]:
-        """Fetch all document texts from Pinecone for BM25 rebuild."""
-        all_texts = []
+    def get_all_records(self) -> List[Dict[str, Any]]:
+        """Fetch id/text/metadata records from Pinecone for BM25 rebuild."""
+        records = []
         try:
             # Query stats to understand index size
             stats = self.index.describe_index_stats()
             total_vectors = stats.total_vector_count
-            
+
             print(f"Fetching {total_vectors} vectors from Pinecone for BM25 indexing")
-            
+
             # For large indexes, we'd need pagination. For now, list vectors.
             # Note: Pinecone's list API has limitations; use query as workaround
             if total_vectors == 0:
                 return []
-            
+
             # Fetch vectors using a dummy query to get metadata
             # A better approach would be to maintain a separate BM25 corpus
             # or use Pinecone's metadata filtering
             dummy_embedding = [0.0] * 384  # Dummy embedding matching dimension
-            
+
             results = self.index.query(
                 vector=dummy_embedding,
                 top_k=min(10000, total_vectors),  # Pinecone has query limits
                 include_metadata=True,
                 namespace="default"
             )
-            
+
             for match in results.matches:
-                if "text" in match.metadata:
-                    all_texts.append(match.metadata["text"])
-                elif "document" in match.metadata:
-                    all_texts.append(match.metadata["document"])
-            
-            print(f"Retrieved {len(all_texts)} texts from Pinecone")
-            
+                metadata = dict(match.metadata) if match.metadata else {}
+                text = metadata.get("text") or metadata.get("document", "")
+                records.append({"id": match.id, "text": text, "metadata": metadata})
+
+            print(f"Retrieved {len(records)} records from Pinecone")
+
         except Exception as e:
-            print(f"Failed to fetch documents from Pinecone: {e}")
-        
-        return all_texts
+            print(f"Failed to fetch records from Pinecone: {e}")
+
+        return records
+
+    def get_all_documents(self) -> List[str]:
+        """Fetch all document texts from Pinecone for BM25 rebuild."""
+        return [record["text"] for record in self.get_all_records()]
 
     def query(self, query_embedding: List[float], top_k: int = 5, namespace: str = "default") -> list:
         """Query Pinecone for similar vectors."""

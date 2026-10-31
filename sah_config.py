@@ -43,6 +43,7 @@ class SAHConfig:
     evidence_validation: bool = False
     grounded_generation: bool = False
     citation_verification: bool = False
+    abstain_on_insufficient: bool = True
     structure_guided_retry: bool = True
     max_retries: int = 2
     top_k: int = 5
@@ -51,6 +52,9 @@ class SAHConfig:
     relevance_threshold: float = -2.0
     sufficiency_threshold: float = 0.35
     citation_threshold: float = 0.0
+    citation_verifier: str = "cross-encoder"
+    citation_nli_model: str = "cross-encoder/nli-deberta-v3-small"
+    citation_nli_threshold: float = 0.5
 
     db_path: str = "data/sah_rag.db"
     structure_json_dir: str = "data/structure"
@@ -78,6 +82,7 @@ class SAHConfig:
             evidence_validation=_env_bool("SAH_EVIDENCE_VALIDATION", False),
             grounded_generation=_env_bool("SAH_GROUNDED_GENERATION", False),
             citation_verification=_env_bool("SAH_CITATION_VERIFICATION", False),
+            abstain_on_insufficient=_env_bool("SAH_ABSTAIN_ON_INSUFFICIENT", True),
             structure_guided_retry=retry_mode == "structure",
             max_retries=_env_int("SAH_MAX_RETRIES", 2),
             top_k=_env_int("SAH_TOP_K", 5),
@@ -86,6 +91,11 @@ class SAHConfig:
             relevance_threshold=_env_float("SAH_RELEVANCE_THRESHOLD", -2.0),
             sufficiency_threshold=_env_float("SAH_SUFFICIENCY_THRESHOLD", 0.35),
             citation_threshold=_env_float("SAH_CITATION_THRESHOLD", 0.0),
+            citation_verifier=os.getenv("SAH_CITATION_VERIFIER", "cross-encoder").strip().lower(),
+            citation_nli_model=os.getenv(
+                "SAH_CITATION_NLI_MODEL", "cross-encoder/nli-deberta-v3-small"
+            ),
+            citation_nli_threshold=_env_float("SAH_CITATION_NLI_THRESHOLD", 0.5),
             db_path=os.getenv("SAH_DB_PATH", "data/sah_rag.db"),
             structure_json_dir=os.getenv("SAH_STRUCTURE_JSON_DIR", "data/structure"),
             ollama_base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),

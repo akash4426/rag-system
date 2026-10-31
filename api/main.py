@@ -31,6 +31,18 @@ from core.ingestion.storage import Storage
 from sah_config import SAHConfig
 from structure.ingest import ingest_document
 from structure.store import StructureStore
+from evidence.pipeline import EvidencePipeline
+from generation.answerer import GroundedAnswerer
+from retrieval.adaptive import AdaptiveRetriever
+from retrieval.baseline import BaselineRetriever
+from retrieval.structural import StructuralRetriever
+from api.trace import (
+    citation_from_chunk,
+    citation_from_legacy,
+    evidence_context_chunks,
+    legacy_context_chunks,
+    legacy_trace,
+)
 
 app = FastAPI(title="23-Component RAG API")
 
@@ -71,6 +83,38 @@ structure_store = StructureStore(
     json_dir=sah_config.structure_json_dir,
 )
 
+# SAH-RAG pipeline. Every stage is opt-in through SAH_* environment flags;
+# with all flags off, /chat keeps using the untouched baseline path.
+sah_baseline = BaselineRetriever(
+    tfidf=tfidf,
+    vector_db=vector_db,
+    embedder=embedder,
+    storage=storage,
+    structure_store=structure_store,
+)
+sah_adaptive = AdaptiveRetriever(
+    sah_baseline,
+    StructuralRetriever(structure_store, config=sah_config),
+    config=sah_config,
+)
+sah_evidence = EvidencePipeline(sah_adaptive, structure_store, config=sah_config)
+sah_answerer = GroundedAnswerer(sah_config)
+
+
+def sah_features_active(config: SAHConfig) -> bool:
+    """Return True when any SAH stage is enabled for chat."""
+    return config.enabled and any(
+        (
+            config.structural_retrieval,
+            config.adaptive_controller,
+            config.rerank,
+            config.evidence_expansion,
+            config.evidence_validation,
+            config.grounded_generation,
+            config.citation_verification,
+        )
+    )
+
 # Simple in-memory session store
 sessions = {}
 
@@ -104,11 +148,11 @@ def health_check():
 @app.post("/chat")
 def chat(request: QueryRequest):
     start_time = time.time()
-    
+
     session_id = request.session_id or str(uuid.uuid4())
     if session_id not in sessions:
         sessions[session_id] = MemoryModule()
-        
+
     memory = sessions[session_id]
     raw_query = request.query
     logger.log_query(session_id, raw_query)
@@ -118,52 +162,123 @@ def chat(request: QueryRequest):
     clean_query = preprocessor.preprocess(raw_query)
     intent = classifier.classify(clean_query)
     expanded_queries = expander.expand(clean_query)
-    logger.log_latency("Query Processing", t0)
-    
-    # 2. Retrieval
-    t0 = time.time()
-    sparse_weight, dense_weight = weights.get_weights(intent)
-    
-    all_sparse_results = []
-    all_dense_results = []
-    
-    for q in expanded_queries:
-        # Sparse
-        sparse_res = tfidf.retrieve(q)
-        all_sparse_results.extend(sparse_res)
-        
-        # Dense
-        q_emb = embedder.embed_query(q)
-        dense_res = vector_db.retrieve(q_emb)
-        all_dense_results.extend(dense_res)
-
-    # 3. Fusion & Re-ranking
-    fused_results = fusion.fuse(all_sparse_results, all_dense_results, sparse_weight, dense_weight)
-    reranked_results = reranker.rerank(clean_query, fused_results, top_k=3)
-    logger.log_latency("Retrieval & Fusion", t0)
-
-    # 4. Generation
-    t0 = time.time()
-    context = context_builder.build_context(reranked_results)
     history = memory.get_history_string()
-    
-    prompt = prompt_builder.build(clean_query, context, history)
-    prompt = token_manager.truncate_context(prompt, prompt_template_tokens=500) # Ensure fits
-    
-    raw_response = llm.generate(prompt)
-    
-    memory.add_interaction(clean_query, raw_response)
-    
-    formatted_response = formatter.format(raw_response, reranked_results)
-    logger.log_latency("Generation", t0)
-    logger.log_generation(session_id, prompt, raw_response)
-    logger.log_latency("Total Request", start_time)
+    logger.log_latency("Query Processing", t0)
 
+    abstained = False
+    verification = None
+
+    if sah_features_active(sah_config):
+        # 2-4. SAH-RAG evidence pipeline + grounded generation.
+        t0 = time.time()
+        evidence_result = sah_evidence.gather(clean_query, k=sah_config.top_k)
+        logger.log_latency("SAH Retrieval & Evidence", t0)
+
+        t0 = time.time()
+        if sah_config.grounded_generation:
+            grounded = sah_answerer.answer(
+                clean_query,
+                evidence_result.evidence,
+                evidence_result.validation,
+            )
+            answer = grounded.answer
+            citations = [citation.to_dict() for citation in grounded.citations]
+            abstained = grounded.abstained
+            verification = grounded.verification.to_dict() if grounded.verification else None
+            generated_text = grounded.raw_response
+            provider = f"ollama:{sah_config.ollama_model}"
+            grounded_flag = True
+        else:
+            context = evidence_result.evidence.context_text
+            prompt = prompt_builder.build(clean_query, context, history)
+            prompt = token_manager.truncate_context(prompt, prompt_template_tokens=500)
+            answer = llm.generate(prompt)
+            generated_text = answer
+            citations = [
+                citation_from_chunk(item, index + 1)
+                for index, item in enumerate(evidence_result.evidence.items)
+            ]
+            provider = "openrouter"
+            grounded_flag = False
+
+        memory.add_interaction(clean_query, answer)
+        context_chunks = evidence_context_chunks(evidence_result.evidence)
+        trace = evidence_result.trace()
+        trace["mode"] = "sah"
+        trace["query_processing"] = {
+            "intent": intent,
+            "expanded_queries": expanded_queries,
+        }
+        trace["generation"] = {
+            "provider": provider,
+            "grounded": grounded_flag,
+            "abstained": abstained,
+            "verification": verification,
+        }
+        logger.log_latency("SAH Generation", t0)
+        logger.log_generation(session_id, clean_query, generated_text)
+    else:
+        # 2. Baseline retrieval: BM25 + dense, weighted fusion, rerank.
+        t0 = time.time()
+        sparse_weight, dense_weight = weights.get_weights(intent)
+
+        all_sparse_results = []
+        all_dense_results = []
+
+        for q in expanded_queries:
+            sparse_res = tfidf.retrieve(q)
+            all_sparse_results.extend(sparse_res)
+
+            q_emb = embedder.embed_query(q)
+            dense_res = vector_db.retrieve(q_emb)
+            all_dense_results.extend(dense_res)
+
+        # 3. Fusion & re-ranking
+        fused_results = fusion.fuse(
+            all_sparse_results, all_dense_results, sparse_weight, dense_weight
+        )
+        reranked_results = reranker.rerank(clean_query, fused_results, top_k=3)
+        logger.log_latency("Retrieval & Fusion", t0)
+
+        # 4. Generation
+        t0 = time.time()
+        context = context_builder.build_context(reranked_results)
+        prompt = prompt_builder.build(clean_query, context, history)
+        prompt = token_manager.truncate_context(prompt, prompt_template_tokens=500)
+
+        raw_response = llm.generate(prompt)
+        memory.add_interaction(clean_query, raw_response)
+        logger.log_latency("Generation", t0)
+        logger.log_generation(session_id, prompt, raw_response)
+
+        answer = raw_response
+        citations = [
+            citation_from_legacy(item, index + 1)
+            for index, item in enumerate(reranked_results)
+        ]
+        context_chunks = legacy_context_chunks(reranked_results)
+        trace = legacy_trace(
+            intent,
+            expanded_queries,
+            reranked_results,
+            sparse_weight,
+            dense_weight,
+            candidate_count=len(fused_results),
+        )
+
+    logger.log_latency("Total Request", start_time)
     return {
         "session_id": session_id,
-        "response": formatted_response,
+        "response": {
+            "answer": answer,
+            "citations": citations,
+            "context_chunks": context_chunks,
+            "abstained": abstained,
+            "verification": verification,
+        },
         "intent_detected": intent,
-        "expanded_queries": expanded_queries
+        "expanded_queries": expanded_queries,
+        "trace": trace,
     }
 
 @app.post("/upload")

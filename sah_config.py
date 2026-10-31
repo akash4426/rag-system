@@ -55,7 +55,7 @@ class SAHConfig:
     db_path: str = "data/sah_rag.db"
     structure_json_dir: str = "data/structure"
     ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = "qwen3:4b"
+    ollama_model: str = "gemma3:4b"
     ollama_timeout: int = 120
     llm_provider: str = "ollama"
     reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
@@ -89,7 +89,7 @@ class SAHConfig:
             db_path=os.getenv("SAH_DB_PATH", "data/sah_rag.db"),
             structure_json_dir=os.getenv("SAH_STRUCTURE_JSON_DIR", "data/structure"),
             ollama_base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
-            ollama_model=os.getenv("OLLAMA_MODEL", "qwen3:4b"),
+            ollama_model=os.getenv("OLLAMA_MODEL", "gemma3:4b"),
             ollama_timeout=_env_int("OLLAMA_TIMEOUT", 120),
             llm_provider=provider,
             reranker_model=os.getenv("SAH_RERANKER_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2"),

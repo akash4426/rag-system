@@ -174,6 +174,61 @@ function CitationDetail({ citation, onClose }) {
   );
 }
 
+function describeRetrieval(trace = {}) {
+  const retrieval = trace.retrieval || {};
+  const strategy = retrieval.structural_strategy || 'disabled';
+  const structuralCount = Number(retrieval.counts?.structural || 0);
+  const selectedSections = retrieval.selected_sections || [];
+  const sectionCount = selectedSections.length;
+  const sectionsLabel = `${sectionCount} section${sectionCount === 1 ? '' : 's'}`;
+  const chunksLabel = `${structuralCount} chunk${structuralCount === 1 ? '' : 's'}`;
+
+  if (structuralCount > 0) {
+    if (strategy === 'keyword_fallback') {
+      return {
+        kind: 'warning',
+        label: 'Structural retrieval · keyword fallback',
+        detail: `${sectionsLabel} · ${chunksLabel} · Ollama selection unavailable`,
+      };
+    }
+    return {
+      kind: 'structural',
+      label: 'Structural retrieval · STAIR-inspired',
+      detail: `${sectionsLabel} · ${chunksLabel} retrieved structurally`,
+    };
+  }
+
+  if (strategy === 'llm' || strategy === 'keyword_fallback') {
+    return {
+      kind: 'warning',
+      label: 'Structural route ran · no chunks returned',
+      detail: `${sectionsLabel} selected · strategy: ${strategy}`,
+    };
+  }
+
+  if (strategy === 'no_sections') {
+    return {
+      kind: 'error',
+      label: 'Structural route failed · no sections',
+      detail: 'Upload a document with extractable structure and try again.',
+    };
+  }
+
+  if ((trace.mode || 'baseline') === 'sah') {
+    return {
+      kind: 'neutral',
+      label: 'Adaptive hybrid retrieval',
+      detail: 'SAH mode was active, but the structural route did not contribute.',
+    };
+  }
+
+  return {
+    kind: 'neutral',
+    label: 'Baseline hybrid retrieval',
+    detail: 'BM25 + dense retrieval · structural route off',
+  };
+}
+
 function MetadataDisplay({ meta }) {
   const [openPanel, setOpenPanel] = useState(null);
   const toggle = (panel) => setOpenPanel(openPanel === panel ? null : panel);
@@ -183,9 +238,29 @@ function MetadataDisplay({ meta }) {
   const evidence = trace.evidence || {};
   const generation = trace.generation || {};
   const chunks = meta.context_chunks || [];
+  const retrievalStatus = describeRetrieval(trace);
+  const structuralChunks = Number(retrieval.counts?.structural || 0);
+  const selectedSectionCount = retrieval.selected_sections?.length || 0;
 
   return (
     <div>
+      <button
+        type="button"
+        className={`retrieval-mode ${retrievalStatus.kind}`}
+        title="Open the retrieval trace"
+        onClick={() => setOpenPanel('trace')}
+        aria-expanded={openPanel === 'trace'}
+      >
+        <span className="retrieval-mode-dot" />
+        <span className="retrieval-mode-copy">
+          <span className="retrieval-mode-label">{retrievalStatus.label}</span>
+          <span className="retrieval-mode-detail">{retrievalStatus.detail}</span>
+        </span>
+        <span className="retrieval-mode-arrow">
+          {openPanel === 'trace' ? '↓' : '→'}
+        </span>
+      </button>
+
       <div className="metadata-actions">
         <button className="metadata-toggle" onClick={() => toggle('pipeline')}>
           <span className={`chevron ${openPanel === 'pipeline' ? 'open' : ''}`}>▶</span>
@@ -234,6 +309,16 @@ function MetadataDisplay({ meta }) {
             <div>
               <h4>Complexity</h4>
               <p className="trace-value">{trace.controller?.complexity || 'n/a'}</p>
+            </div>
+            <div>
+              <h4>Structural Strategy</h4>
+              <p className="trace-value">{retrieval.structural_strategy || 'disabled'}</p>
+            </div>
+            <div>
+              <h4>Structural Evidence</h4>
+              <p className="trace-value">
+                {structuralChunks} chunks · {selectedSectionCount} sections selected
+              </p>
             </div>
             <div>
               <h4>Evidence Tokens</h4>

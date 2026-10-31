@@ -61,6 +61,13 @@ def test_evidence_context_chunks_include_all_roles():
     assert chunks[1]["evidence_id"] == "E2"
 
 
+def test_legacy_trace_reports_actual_generation_provider():
+    trace = legacy_trace(
+        "factual", ["text"], [], 0.6, 0.4, provider="ollama:gemma3:4b"
+    )
+    assert trace["generation"]["provider"] == "ollama:gemma3:4b"
+
+
 def test_legacy_trace_has_retrieval_and_generation_sections():
     item = {"content": "text", "metadata": {}, "sources": ["bm25"]}
     trace = legacy_trace("factual", ["text"], [item], 0.6, 0.4, candidate_count=9)

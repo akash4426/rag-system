@@ -5,7 +5,7 @@
 ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
 ![OpenAI](https://img.shields.io/badge/OpenRouter-412991.svg?style=for-the-badge&logo=OpenAI&logoColor=white)
 
-An enterprise-grade, highly modular Retrieval-Augmented Generation (RAG) system composed of 23 distinct components. This system implements an advanced, production-ready pipeline utilizing Hybrid Search (Dense + Sparse), Reciprocal Rank Fusion (RRF), Cross-Encoder Re-ranking, and dynamic query expansion via the OpenRouter API.
+An enterprise-grade, highly modular Retrieval-Augmented Generation (RAG) system composed of 23 distinct components. This system implements an advanced, production-ready pipeline utilizing Hybrid Search (Dense + Sparse), Reciprocal Rank Fusion (RRF), Cross-Encoder Re-ranking, and dynamic query expansion via the OpenRouter API. Final-answer generation automatically falls back to a local Ollama model when OpenRouter is unconfigured or fails.
 
 It features a sleek, dark-themed "Data Console" built in React, allowing users to effortlessly upload, index, and query documents seamlessly.
 
@@ -16,10 +16,10 @@ It features a sleek, dark-themed "Data Console" built in React, allowing users t
 The system strictly adheres to a modular class-per-component design, logically separated into 4 primary pipelines and an orchestration/UI layer:
 
 ### 1. Ingestion Pipeline
-- **Document Loader:** Ingests raw `.txt` and `.pdf` files.
+- **Document Loader:** Ingests `.txt`, `.pdf`, `.md`, `.markdown`, and `.docx` files.
 - **Text Splitter:** Implements recursive character chunking.
 - **Embedding Generator:** Generates dense vector representations using `SentenceTransformers`.
-- **Storage:** Persists vector data to **Pinecone** (production) or ChromaDB (fallback).
+- **Storage:** Persists vector data to **Pinecone** (production) or an in-memory cosine store (local fallback).
 - **Index Builder:** Manages the ingestion orchestration and builds the offline BM25 sparse index.
 
 ### 2. Query Pipeline
@@ -29,7 +29,7 @@ The system strictly adheres to a modular class-per-component design, logically s
 
 ### 3. Retrieval Pipeline
 - **TF-IDF / BM25 Retriever:** Performs keyword-based sparse search.
-- **Vector DB Retriever:** Performs dense semantic search via Pinecone or ChromaDB.
+- **Vector DB Retriever:** Performs dense semantic search via Pinecone or the in-memory cosine store.
 - **Hybrid Fusion Engine:** Merges sparse and dense results using Reciprocal Rank Fusion.
 - **Dynamic Weight Controller:** Adjusts BM25/Vector weights based on user intent.
 - **Re-ranker:** Uses a `Cross-Encoder` to intelligently sort the fused results.
@@ -38,14 +38,14 @@ The system strictly adheres to a modular class-per-component design, logically s
 - **Context Builder:** Stitches re-ranked text chunks into an optimized context block.
 - **Token Manager:** Enforces strict token limits via `tiktoken` to prevent context overflow.
 - **Prompt Builder:** Fuses query, chat history, and context into the final LLM prompt.
-- **LLM Engine:** Generates the final output using the OpenRouter API (`gpt-4o-mini`).
+- **LLM Engine:** Generates the final output using the OpenRouter API (`gpt-4o-mini`), with an automatic local Ollama fallback (`gemma3:4b`) when OpenRouter fails or is unconfigured.
 - **Response Formatter:** Extracts and structures the system citations.
 - **Memory Module:** Maintains a sliding-window session history.
 
 ### 5. API & UI Layer
 - **System Logger:** Captures offline generation metrics and processing latency.
-- **FastAPI Layer:** Provides a CORS-enabled, RESTful API (`/chat`, `/upload`).
-- **React App:** A sleek Vite-powered frontend featuring an interactive Data Console sidebar for document uploading and real-time processing metadata visibility.
+- **FastAPI Layer:** Provides a CORS-enabled RESTful API (`/chat`, `/upload`, `/documents`, `/documents/{doc_id}/structure`).
+- **React App:** A sleek Vite-powered frontend featuring an interactive Data Console sidebar for document uploading, retrieval traces, clickable citations, and a section-level source explorer.
 
 ---
 
@@ -54,6 +54,10 @@ The system strictly adheres to a modular class-per-component design, logically s
 ### Prerequisites
 - Python 3.10+
 - Node.js & npm
+- Ollama with `gemma3:4b` for local generation, structural section selection, and the OpenRouter fallback:
+  ```bash
+  ollama pull gemma3:4b
+  ```
 
 ### Installation
 
@@ -76,57 +80,96 @@ The system strictly adheres to a modular class-per-component design, logically s
    ```
 
 4. **Environment Variables:**
-   Copy the example environment file and insert your API keys:
+   Copy the example environment file and configure the providers:
    ```bash
    cp .env.example .env
    ```
    
-   **For Production with Pinecone:**
+   **OpenRouter (primary generator):**
+   ```env
+   OPEN_ROUTER_API=your_openrouter_key
+   OPENROUTER_MODEL=openai/gpt-4o-mini
+   ```
+   If OpenRouter is unavailable or out of credits, final generation automatically falls back to Ollama. Set `OLLAMA_FALLBACK_ENABLED=false` to disable this.
+
+   **Local Ollama (fallback and SAH generation/selection):**
+   ```env
+   OLLAMA_FALLBACK_ENABLED=true
+   OLLAMA_BASE_URL=http://localhost:11434
+   OLLAMA_MODEL=gemma3:4b
+   OLLAMA_TIMEOUT=120
+   ```
+
+   **Production with Pinecone (optional):**
    - Get your Pinecone API key from [pinecone.io](https://www.pinecone.io/)
    - Add to `.env`:
      ```env
      PINECONE_API_KEY=your_api_key_here
      PINECONE_ENVIRONMENT=us-east-1
-     OPENAI_API_KEY=your_openai_key_here
+     PINECONE_INDEX_NAME=rag-system
      ```
-   
-   **For Local Development (Fallback):**
-   - Leave Pinecone variables empty to use in-memory storage
-   - Only OPENAI_API_KEY is required
+   - Without Pinecone, the system uses the in-memory cosine store.
    
    See [PINECONE_SETUP.md](./PINECONE_SETUP.md) for detailed setup instructions.
 
 ### Running the System
 
-**Method 1: Docker (Recommended for Production)**
-You can instantly spin up both the backend and frontend, fully containerized, using Docker Compose:
+**Method 1: Docker**
+You can build and run both the backend and the prebuilt React UI with Docker Compose:
 ```bash
 docker compose up --build
 ```
-The React UI will be available at `http://localhost:3000` and the API at `http://localhost:8000`. Your Vector Database is safely persisted in a Docker Volume.
+The UI and API are served together at `http://localhost:8000`. Add `OPEN_ROUTER_API`, `OPENROUTER_MODEL`, `OLLAMA_*`, and any Pinecone variables to the `environment` block in `docker-compose.yml`; the container does not read your host `.env` automatically. Ollama runs on the host by default, so Docker Desktop users may need `OLLAMA_BASE_URL=http://host.docker.internal:11434`.
 
 **Method 2: Local Development**
-You can boot both the FastAPI backend and the React development server concurrently using the provided start script:
+Start Ollama only if it is not already running:
+```bash
+ollama serve
+```
+> On macOS the Ollama menu-bar app normally starts the server automatically. If `ollama serve` reports `address already in use`, the server is already running; skip this command.
+
+In a second terminal, launch both the FastAPI backend and the Vite UI:
 ```bash
 python run.py
 ```
-The React UI will automatically open in your default browser at `http://localhost:5173`, communicating with the FastAPI backend on `http://localhost:8000`.
+The React UI opens at `http://localhost:5173` and talks to the FastAPI backend at `http://localhost:8000`.
+
+To force the structural retriever for every query and keep final generation local:
+```bash
+export SAH_STRUCTURAL_RETRIEVAL=true
+export SAH_ADAPTIVE_CONTROLLER=false
+export SAH_GROUNDED_GENERATION=true
+export OLLAMA_MODEL=gemma3:4b
+python run.py
+```
+
+These are backend environment variables, not UI toggles. Restart `run.py` after changing them.
 
 ---
 
 ## 📂 Document Management
 
-You do not need to run offline indexing scripts! Simply launch the application and use the **Data Console** sidebar on the left to upload `.txt` or `.pdf` files. 
+You do not need to run offline indexing scripts. Launch the application and use the **Data Console** sidebar on the left to upload PDF, DOCX, Markdown, or text files.
 
-The system will incrementally process the document through all 23 components, updating both the VectorDB and BM25 Sparse Index in real-time.
+The system incrementally indexes the document into the dense vector store, BM25 sparse index, and SAH-RAG section store. The upload response reports the structure strategy and section/chunk counts, and the **Source Explorer** lists uploaded documents with their extracted section trees.
+
+If a PDF has bookmarks, those become the section hierarchy. Otherwise the extractor falls back to heading detection, then fixed page windows.
 
 ---
 ## 🔌 API Reference
 
-The FastAPI backend exposes two primary endpoints designed for headless integration:
+The FastAPI backend exposes these endpoints:
+
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/health` | GET | Runtime health and vector-store backend |
+| `/chat` | POST | Query the full RAG pipeline and return an answer, citations, and trace |
+| `/upload` | POST | Upload and index a document; also builds the SAH section store |
+| `/documents` | GET | List structured documents and section counts |
+| `/documents/{doc_id}/structure` | GET | Return a document's section tree and chunk mapping |
 
 ### 1. Chat Completion (`POST /chat`)
-Processes a query through the full 23-component RAG pipeline.
+
 ```json
 // Request
 {
@@ -134,28 +177,108 @@ Processes a query through the full 23-component RAG pipeline.
   "session_id": "optional-uuid-for-memory"
 }
 
-// Response
+// Response (abridged)
 {
   "session_id": "uuid",
   "response": {
-    "answer": "The order of volatility is...",
-    "citations": ["bm25, vector_db"],
-    "context_chunks": [
+    "answer": "The order of volatility is ... [E1]",
+    "citations": [
       {
-        "source": "bm25",
-        "text": "...extracted text chunk..."
+        "evidence_id": "E1",
+        "chunk_id": "chunk-123",
+        "section_id": "doc::s0004",
+        "section_title": "Order of Volatility",
+        "doc": "notes.pdf",
+        "page": 12,
+        "text": "..."
       }
-    ]
+    ],
+    "context_chunks": [],
+    "abstained": false,
+    "verification": null
   },
-  "intent_detected": "analytical",
-  "expanded_queries": ["explain volatility order", "define order of volatility"]
+  "intent_detected": "factual",
+  "expanded_queries": ["order of volatility", "volatile data order"],
+  "trace": {
+    "mode": "baseline",
+    "retrieval": {"retrievers": ["bm25", "vector_db"], "candidates": 20, "returned": 3},
+    "generation": {"provider": "ollama:gemma3:4b", "grounded": false}
+  }
 }
 ```
 
-### 2. Document Upload (`POST /upload`)
-Accepts `.txt`, `.pdf`, `.md`, and `.docx` files via `multipart/form-data` and triggers incremental indexing.
+The `trace.generation.provider` field reports the provider that actually answered. It is `openrouter` when the primary succeeds and `ollama:gemma3:4b` when the fallback is used.
 
-For the extended, structured `/chat` response with retrieval traces, see the **SAH-RAG** section below.
+### 2. Document Upload (`POST /upload`)
+
+Accepts `.txt`, `.pdf`, `.md`, `.markdown`, and `.docx` files via `multipart/form-data`. The response includes the legacy chunk count and, when structure extraction succeeds, a `structure` object:
+
+```json
+{
+  "status": "success",
+  "message": "Successfully uploaded and indexed notes.pdf",
+  "chunks": 29,
+  "filename": "notes.pdf",
+  "structure": {
+    "doc_id": "notes-1a2b3c4d",
+    "strategy": "pdf_bookmarks",
+    "sections": 32,
+    "chunks": 29
+  }
+}
+```
+
+For the extended structured `/chat` response with retrieval traces, see the **SAH-RAG** section below.
+
+---
+
+## 🦙 Local Ollama Generation and Fallback
+
+OpenRouter remains the primary generator for the legacy path. When it is unconfigured, returns an error such as `402 Insufficient credits`, times out, or returns an empty response, `LLMEngine` retries the same prompt against local Ollama.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `OLLAMA_FALLBACK_ENABLED` | `true` | Enable the automatic OpenRouter → Ollama fallback |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama API endpoint |
+| `OLLAMA_MODEL` | `gemma3:4b` | Local generation and structural-selection model |
+| `OLLAMA_TIMEOUT` | `120` | Request timeout in seconds |
+
+The API trace reports which provider answered:
+
+```json
+"generation": {
+  "provider": "ollama:gemma3:4b",
+  "grounded": false
+}
+```
+
+Query expansion still uses OpenRouter when configured. If that call fails, expansion degrades to the original query; final-answer generation is the stage protected by the Ollama fallback.
+
+### Fully local mode
+
+To skip OpenRouter entirely, either enable grounded SAH generation or leave `OPEN_ROUTER_API` unset:
+
+```bash
+export SAH_GROUNDED_GENERATION=true
+export OLLAMA_MODEL=gemma3:4b
+python run.py
+```
+
+Grounded generation calls Ollama directly and does not attempt OpenRouter.
+
+### Ollama troubleshooting
+
+- `bind: address already in use` on port `11434` means Ollama is already running. Do not start a second server.
+- Check the server and model:
+  ```bash
+  curl -s http://localhost:11434/api/tags
+  ollama list
+  ```
+- Pull the model if it is missing:
+  ```bash
+  ollama pull gemma3:4b
+  ```
+- On macOS, the Ollama menu-bar app and `ollama serve` start the same server. Use one or the other.
 
 ---
 
@@ -167,6 +290,14 @@ The `SystemLogger` component automatically records pipeline metrics to `rag_syst
 - The raw generated responses and context payloads.
 
 This log file can be parsed for offline evaluation frameworks (like RAGAS or TruLens) to compute Answer Relevance and Context Precision.
+
+## ✅ Tests
+
+```bash
+python -m pytest -q
+```
+
+The suite covers structure extraction and mapping, structural selection and fallback, adaptive routing and fusion, evidence expansion, validation and retry modes, grounded generation and citation verification, trace serialization, evaluation metrics, and the OpenRouter → Ollama fallback.
 
 ---
 
@@ -249,8 +380,10 @@ All flags are read from the environment by `sah_config.SAHConfig`. The defaults 
 | `SAH_CITATION_VERIFIER` | `cross-encoder` | `cross-encoder` or `nli` |
 | `SAH_CITATION_NLI_MODEL` | `cross-encoder/nli-deberta-v3-small` | Optional NLI verifier |
 | `SAH_CITATION_NLI_THRESHOLD` | `0.5` | NLI entailment threshold |
+| `OLLAMA_FALLBACK_ENABLED` | `true` | Retry final generation on local Ollama when OpenRouter fails |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Local generation/selector endpoint |
 | `OLLAMA_MODEL` | `gemma3:4b` | Local generation/selector model |
+| `OLLAMA_TIMEOUT` | `120` | Local Ollama request timeout in seconds |
 
 To exercise E5 through the API, enable the corresponding flags before starting the backend. The defaults keep `/chat` on the legacy baseline path:
 
@@ -266,9 +399,63 @@ export SAH_CITATION_VERIFICATION=true
 The local generator requires Ollama and a pulled model:
 
 ```bash
-ollama serve
 ollama pull gemma3:4b
 ```
+
+See [Local Ollama Generation and Fallback](#-local-ollama-generation-and-fallback) for server startup and troubleshooting.
+
+The legacy OpenRouter generation path now retries the same prompt against this local model when OpenRouter is unconfigured, returns an error (for example, insufficient credits), or returns an empty response. Set `OLLAMA_FALLBACK_ENABLED=false` to disable that fallback. The response trace reports the provider that actually answered (`openrouter` or `ollama:gemma3:4b`).
+
+### Testing structural retrieval from the UI
+
+The SAH flags are backend process settings, not switches inside the React app.
+
+1. Start Ollama (skip if it is already running) and confirm the model:
+   ```bash
+   ollama list
+   ```
+2. Start the app with structural retrieval and local grounded generation:
+   ```bash
+   export SAH_STRUCTURAL_RETRIEVAL=true
+   export SAH_ADAPTIVE_CONTROLLER=false
+   export SAH_GROUNDED_GENERATION=true
+   export OLLAMA_MODEL=gemma3:4b
+   python run.py
+   ```
+   `SAH_ADAPTIVE_CONTROLLER=false` makes the structural route run for every query. With the controller enabled, simple factual queries may use only semantic and lexical retrieval.
+3. In the left **Data Console**, upload a PDF, DOCX, Markdown, or text file. Wait for `Successfully uploaded and indexed ...`. The **Source Explorer** should list the document and show a section count such as `32§`.
+4. Expand the document in **Source Explorer** to confirm the extracted section tree.
+5. Ask a section-oriented question, for example:
+   > Which section discusses indirect triples?
+6. Open **Retrieval Trace** under the answer and verify:
+   - **Mode:** `sah`
+   - **Retrievers:** `semantic + lexical + structural`
+   - **Structural Strategy:** `llm`
+   - **Retrieval Counts:** includes `structural: N` with `N > 0`
+   - **Selected Sections:** up to `SAH_STRUCTURAL_TOP_N` section titles
+   - **Generation:** `ollama:gemma3:4b` when grounded generation is enabled
+7. Click **Sources** to inspect retrieved passages and click an inline `[E#]` citation to see its document, page, section, and chunk ID.
+
+Each answer also shows a retrieval-mode badge above the metadata buttons. Click the badge to open the trace.
+
+| Badge | Meaning |
+|---|---|
+| Green · **Structural retrieval · STAIR-inspired** | Structural chunks contributed to the retrieved evidence |
+| Amber · **Structural retrieval · keyword fallback** | The Ollama selector failed; deterministic section matching supplied structural chunks |
+| Amber · **Structural route ran · no chunks returned** | Sections were selected but produced no usable chunks |
+| Red · **Structural route failed · no sections** | Structure extraction returned no sections for the uploaded documents |
+| Grey · **Baseline hybrid retrieval** | The request used the legacy BM25 + dense path |
+| Grey · **Adaptive hybrid retrieval** | SAH mode was active, but the structural route did not contribute |
+
+`Structural Strategy` meanings:
+
+| Value | Meaning |
+|---|---|
+| `llm` | Ollama selected valid section IDs; this is the STAIR-inspired route |
+| `keyword_fallback` | Ollama was unavailable or returned malformed JSON; deterministic keyword matching selected sections |
+| `no_sections` | No structure was stored for the requested documents; re-upload or check `GET /documents` |
+
+If structural retrieval does not appear in the trace, confirm the backend was restarted after exporting the flags.
 
 ### Running experiments
 
@@ -346,11 +533,25 @@ Outputs:
   },
   "trace": {
     "mode": "sah",
-    "controller": {"retrievers": ["semantic", "lexical"], "complexity": "simple"},
-    "retrieval": {"counts": {}, "selected_sections": []},
+    "controller": {
+      "retrievers": ["semantic", "lexical", "structural"],
+      "complexity": "fixed"
+    },
+    "retrieval": {
+      "counts": {"semantic": 5, "lexical": 5, "structural": 3},
+      "selected_sections": [
+        {"section_id": "doc::s0011", "title": "Three-Address Code", "rank": 1}
+      ],
+      "structural_strategy": "llm"
+    },
     "validation": {"sufficient": true, "coverage": 1.0},
     "retries": [],
-    "evidence": {"token_count": 823, "items": []}
+    "evidence": {"token_count": 823, "items": []},
+    "generation": {
+      "provider": "ollama:gemma3:4b",
+      "grounded": true,
+      "abstained": false
+    }
   }
 }
 ```
@@ -389,7 +590,9 @@ Key observations:
 - Structure extraction is limited to the implemented strategies: PDF bookmarks, PDF headings, fixed PDF pagination, DOCX headings, and Markdown/TXT headings.
 - Retries are capped at two and reuse the same evidence store; a genuinely unanswerable question can still consume the full retry budget.
 - Latency measurements come from a local Apple-silicon machine using MPS and are not production benchmarks.
-- The legacy OpenRouter generation path remains available for the baseline; grounded SAH generation requires Ollama.
+- The legacy OpenRouter generation path is retained with an automatic Ollama fallback. Grounded SAH generation requires Ollama.
+- The Ollama fallback improves availability, not answer quality; `gemma3:4b` may be slower and less accurate than the configured OpenRouter model.
+- Query expansion still depends on OpenRouter when configured. If it fails, the system proceeds with the original query rather than spending another local generation call.
 
 ---
 *Built as a showcase for Advanced Agentic Architecture.*

@@ -192,13 +192,12 @@ def chat(request: QueryRequest):
             context = evidence_result.evidence.context_text
             prompt = prompt_builder.build(clean_query, context, history)
             prompt = token_manager.truncate_context(prompt, prompt_template_tokens=500)
-            answer = llm.generate(prompt)
+            answer, provider = llm.generate_with_provider(prompt)
             generated_text = answer
             citations = [
                 citation_from_chunk(item, index + 1)
                 for index, item in enumerate(evidence_result.evidence.items)
             ]
-            provider = "openrouter"
             grounded_flag = False
 
         memory.add_interaction(clean_query, answer)
@@ -246,7 +245,7 @@ def chat(request: QueryRequest):
         prompt = prompt_builder.build(clean_query, context, history)
         prompt = token_manager.truncate_context(prompt, prompt_template_tokens=500)
 
-        raw_response = llm.generate(prompt)
+        raw_response, generation_provider = llm.generate_with_provider(prompt)
         memory.add_interaction(clean_query, raw_response)
         logger.log_latency("Generation", t0)
         logger.log_generation(session_id, prompt, raw_response)
@@ -264,6 +263,7 @@ def chat(request: QueryRequest):
             sparse_weight,
             dense_weight,
             candidate_count=len(fused_results),
+            provider=generation_provider,
         )
 
     logger.log_latency("Total Request", start_time)

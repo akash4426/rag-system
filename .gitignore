@@ -13,6 +13,7 @@ __pycache__/
 *$py.class
 
 # Data & Database
+eval/
 data/
 chroma_db/
 bm25_corpus.pkl

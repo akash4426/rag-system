@@ -887,6 +887,97 @@
   margin-top: var(--sp-2);
 }
 
+.retrieval-mode {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  text-align: left;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.retrieval-mode:hover {
+  border-color: var(--border-accent);
+  background: var(--amber-soft);
+}
+
+.retrieval-mode:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+.retrieval-mode.structural {
+  border-color: rgba(52, 211, 153, 0.35);
+  background: rgba(52, 211, 153, 0.06);
+}
+
+.retrieval-mode.warning {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: var(--amber-soft);
+}
+
+.retrieval-mode.error {
+  border-color: rgba(248, 113, 113, 0.35);
+  background: rgba(248, 113, 113, 0.06);
+}
+
+.retrieval-mode-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--text-dim);
+}
+
+.retrieval-mode.structural .retrieval-mode-dot {
+  background: var(--green);
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.7);
+}
+
+.retrieval-mode.warning .retrieval-mode-dot {
+  background: var(--amber);
+  box-shadow: 0 0 8px var(--amber-glow);
+}
+
+.retrieval-mode.error .retrieval-mode-dot {
+  background: var(--red);
+  box-shadow: 0 0 8px rgba(248, 113, 113, 0.6);
+}
+
+.retrieval-mode-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.retrieval-mode-label {
+  color: var(--text-primary);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.retrieval-mode-detail {
+  color: var(--text-dim);
+  font-size: 0.66rem;
+  line-height: 1.35;
+}
+
+.retrieval-mode-arrow {
+  margin-left: auto;
+  padding-left: var(--sp-2);
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+
 .message-bubble.abstained {
   border-color: rgba(245, 158, 11, 0.4);
 }

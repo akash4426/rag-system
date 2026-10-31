@@ -89,6 +89,7 @@ def legacy_trace(
     sparse_weight: float,
     dense_weight: float,
     candidate_count: int | None = None,
+    provider: str = "openrouter",
 ) -> dict[str, Any]:
     """Trace for the untouched baseline path."""
     return {
@@ -104,5 +105,5 @@ def legacy_trace(
         "evidence": None,
         "validation": None,
         "retries": [],
-        "generation": {"provider": "openrouter", "grounded": False},
+        "generation": {"provider": provider, "grounded": False},
     }

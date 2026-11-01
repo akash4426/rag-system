@@ -13,6 +13,7 @@ __pycache__/
 *$py.class
 
 # Data & Database
+env.txt
 eval/
 data/
 chroma_db/

@@ -1,8 +1,12 @@
-"""Final-answer generation with a local Ollama fallback.
+"""Final-answer generation with a three-tier provider chain.
 
-OpenRouter remains the primary generator. If it is unconfigured, returns an
-error, or produces an empty response, generation falls back to the local Ollama
-model configured by ``OLLAMA_MODEL`` (``gemma3:4b`` by default).
+Priority order:
+  1. Apinex  (primary cloud LLM — free/deepseek-v4.1-flash)
+  2. OpenRouter (secondary cloud LLM — gpt-4o-mini)
+  3. Ollama  (local fallback — gemma3:4b)
+
+Each provider is tried in sequence; the first to return a non-empty response
+wins.  Failures are logged but never surfaced to the caller as exceptions.
 """
 
 from __future__ import annotations
@@ -10,8 +14,7 @@ from __future__ import annotations
 import logging
 import os
 
-from langchain_openai import ChatOpenAI
-
+from core.generation.apinex_client import ApinexClient, ApinexUnavailable
 from retrieval.ollama_client import OllamaClient, OllamaUnavailable
 
 logger = logging.getLogger(__name__)
@@ -24,78 +27,127 @@ def _env_bool(name: str, default: bool) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
-class LLMEngine:
-    """Component 15: LLM Engine.
+def _env_int(name: str, default: int) -> int:
+    try:
+        return int(os.getenv(name, str(default)))
+    except (TypeError, ValueError):
+        return default
 
-    OpenRouter is tried first. When ``OLLAMA_FALLBACK_ENABLED`` is true, a
-    failure transparently retries the same prompt against local Ollama.
+
+class LLMEngine:
+    """Component 15: LLM Engine — three-tier provider chain.
+
+    Apinex is the default cloud provider for production.  OpenRouter and the
+    local Ollama model are retained as automatic fallbacks so the system
+    degrades gracefully when any single provider is unavailable.
     """
 
-    def __init__(self):
-        api_key = os.getenv("OPEN_ROUTER_API")
-        model = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
-        self.fallback_enabled = _env_bool("OLLAMA_FALLBACK_ENABLED", True)
-        if not api_key:
-            if self.fallback_enabled:
-                print("WARNING: OPEN_ROUTER_API not set. Generation will use the Ollama fallback.")
-            else:
-                print("WARNING: OPEN_ROUTER_API not set and OLLAMA_FALLBACK_ENABLED is false.")
-            self.llm = None
-        else:
-            self.llm = ChatOpenAI(
-                openai_api_base="https://openrouter.ai/api/v1",
-                openai_api_key=api_key,
-                model_name=model,
-                temperature=0.3,
-            )
-
-        self.fallback: OllamaClient | None = None
-        if self.fallback_enabled:
+    def __init__(self) -> None:
+        # ── Tier 1: Apinex (primary) ──────────────────────────────────────
+        self.apinex: ApinexClient | None = None
+        apinex_key = os.getenv("APINEX_API_KEY", "").strip()
+        if apinex_key:
             try:
-                timeout = int(os.getenv("OLLAMA_TIMEOUT", "120"))
-            except (TypeError, ValueError):
-                timeout = 120
-            self.fallback = OllamaClient(
+                self.apinex = ApinexClient(
+                    api_key=apinex_key,
+                    model=os.getenv("APINEX_MODEL", "free/deepseek-v4.1-flash"),
+                    temperature=0.2,
+                    max_tokens=_env_int("APINEX_MAX_TOKENS", 1024),
+                    timeout=_env_int("APINEX_TIMEOUT", 60),
+                )
+                logger.info("Apinex client initialised (model: %s).", self.apinex.model)
+            except Exception as exc:
+                logger.warning("Apinex client failed to initialise: %s", exc)
+        else:
+            logger.warning("APINEX_API_KEY not set — Apinex provider disabled.")
+
+        # ── Tier 2: OpenRouter (secondary) ────────────────────────────────
+        self.openrouter_llm = None
+        openrouter_key = os.getenv("OPEN_ROUTER_API", "").strip()
+        if openrouter_key:
+            try:
+                from langchain_openai import ChatOpenAI
+                self.openrouter_llm = ChatOpenAI(
+                    openai_api_base="https://openrouter.ai/api/v1",
+                    openai_api_key=openrouter_key,
+                    model_name=os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini"),
+                    temperature=0.3,
+                )
+                logger.info("OpenRouter client initialised as secondary fallback.")
+            except Exception as exc:
+                logger.warning("OpenRouter client failed to initialise: %s", exc)
+        else:
+            logger.info("OPEN_ROUTER_API not set — OpenRouter provider disabled.")
+
+        # ── Tier 3: Ollama (local last-resort) ────────────────────────────
+        self.ollama: OllamaClient | None = None
+        if _env_bool("OLLAMA_FALLBACK_ENABLED", True):
+            self.ollama = OllamaClient(
                 base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
                 model=os.getenv("OLLAMA_MODEL", "gemma3:4b"),
-                timeout=timeout,
+                timeout=_env_int("OLLAMA_TIMEOUT", 120),
             )
+            logger.info("Ollama local fallback ready (model: %s).", self.ollama.model)
+
+    # ----------------------------------------------------------------- API
 
     def generate(self, prompt: str) -> str:
-        """Return generated text, preserving the original public API."""
+        """Return generated text (public API, preserved for backward compat)."""
         answer, _provider = self.generate_with_provider(prompt)
         return answer
 
     def generate_with_provider(self, prompt: str) -> tuple[str, str]:
-        """Generate text and report which provider actually answered."""
+        """Generate text and report which provider actually answered.
+
+        Returns
+        -------
+        (text, provider_label)
+            ``provider_label`` is one of ``"apinex"``, ``"openrouter"``,
+            ``"ollama:<model>"``, or ``"error"``.
+        """
         errors: list[str] = []
 
-        if self.llm is not None:
+        # Tier 1 — Apinex
+        if self.apinex is not None:
             try:
-                response = self.llm.invoke(prompt)
-                content = response.content
-                if not str(content or "").strip():
-                    raise ValueError("OpenRouter returned an empty response.")
-                return str(content), "openrouter"
-            except Exception as exc:  # fall through to local generation
-                errors.append(f"OpenRouter: {exc}")
-                logger.warning("OpenRouter generation failed: %s", exc)
-        else:
-            errors.append("OpenRouter: OPEN_ROUTER_API is not configured")
+                content = self.apinex.generate(prompt)
+                logger.debug("Apinex answered (%d chars).", len(content))
+                return content, f"apinex:{self.apinex.model}"
+            except ApinexUnavailable as exc:
+                errors.append(f"Apinex: {exc}")
+                logger.warning("Apinex failed, trying next provider: %s", exc)
 
-        if self.fallback is not None:
+        # Tier 2 — OpenRouter
+        if self.openrouter_llm is not None:
             try:
-                content = self.fallback.generate(prompt, temperature=0.3)
+                response = self.openrouter_llm.invoke(prompt)
+                content = str(response.content or "").strip()
+                if not content:
+                    raise ValueError("OpenRouter returned an empty response.")
+                logger.warning("Using OpenRouter fallback.")
+                return content, "openrouter"
+            except Exception as exc:
+                errors.append(f"OpenRouter: {exc}")
+                logger.warning("OpenRouter failed, trying Ollama: %s", exc)
+        else:
+            errors.append("OpenRouter: not configured")
+
+        # Tier 3 — Ollama
+        if self.ollama is not None:
+            try:
+                content = self.ollama.generate(prompt, temperature=0.3)
                 if not content.strip():
                     raise OllamaUnavailable("Ollama returned an empty response.")
-                provider = f"ollama:{self.fallback.model}"
-                logger.warning("Using Ollama fallback model %s.", self.fallback.model)
+                provider = f"ollama:{self.ollama.model}"
+                logger.warning("Using Ollama local fallback (%s).", self.ollama.model)
                 return content, provider
             except Exception as exc:
-                errors.append(f"Ollama fallback: {exc}")
-                logger.error("Ollama fallback failed: %s", exc)
+                errors.append(f"Ollama: {exc}")
+                logger.error("Ollama fallback also failed: %s", exc)
 
-        return "Error during generation: " + " | ".join(errors), "error"
+        error_msg = "Error: all LLM providers failed — " + " | ".join(errors)
+        logger.error(error_msg)
+        return error_msg, "error"
 
 
 __all__ = ["LLMEngine"]

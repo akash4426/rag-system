@@ -58,17 +58,34 @@ class SAHConfig:
 
     db_path: str = "data/sah_rag.db"
     structure_json_dir: str = "data/structure"
+
+    # ── Ollama (local fallback) ──────────────────────────────────────────
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "gemma3:4b"
     ollama_timeout: int = 120
-    llm_provider: str = "ollama"
+
+    # ── Apinex (primary cloud LLM) ───────────────────────────────────────
+    apinex_api_key: str = ""
+    apinex_base_url: str = "https://api.apinex.bond/v1"
+    apinex_model: str = "free/deepseek-v4.1-flash"
+    apinex_max_tokens: int = 1024
+    apinex_timeout: int = 60
+
+    # ── Provider selection ───────────────────────────────────────────────
+    # "apinex" → Apinex primary, Ollama fallback
+    # "ollama" → Ollama only (offline / privacy mode)
+    # "auto"   → pick Apinex if APINEX_API_KEY is set, else Ollama
+    llm_provider: str = "apinex"
+
     reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
     use_pinecone: bool = False
 
     @classmethod
     def from_env(cls) -> "SAHConfig":
         """Read SAH_* environment variables with safe defaults."""
-        provider = os.getenv("SAH_LLM_PROVIDER", "ollama").strip().lower()
+        provider = os.getenv("SAH_LLM_PROVIDER", "apinex").strip().lower()
+        if provider not in {"apinex", "ollama", "auto"}:
+            provider = "apinex"
         retry_mode = os.getenv("SAH_RETRY_MODE", "structure").strip().lower()
         if retry_mode not in {"structure", "plain"}:
             retry_mode = "structure"
@@ -101,6 +118,12 @@ class SAHConfig:
             ollama_base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
             ollama_model=os.getenv("OLLAMA_MODEL", "gemma3:4b"),
             ollama_timeout=_env_int("OLLAMA_TIMEOUT", 120),
+            # ── Apinex ──────────────────────────────────────────────────
+            apinex_api_key=os.getenv("APINEX_API_KEY", ""),
+            apinex_base_url=os.getenv("APINEX_BASE_URL", "https://api.apinex.bond/v1"),
+            apinex_model=os.getenv("APINEX_MODEL", "free/deepseek-v4.1-flash"),
+            apinex_max_tokens=_env_int("APINEX_MAX_TOKENS", 1024),
+            apinex_timeout=_env_int("APINEX_TIMEOUT", 60),
             llm_provider=provider,
             reranker_model=os.getenv("SAH_RERANKER_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2"),
             use_pinecone=_env_bool("SAH_USE_PINECONE", False),

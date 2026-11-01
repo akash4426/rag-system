@@ -1128,3 +1128,34 @@
 2026-10-31 13:11:38,027 - RAGSystem - INFO - [SAH Generation] Latency: 8.5210s
 2026-10-31 13:11:38,028 - RAGSystem - INFO - [Session: sx43qjc0ny] Generated Response Length: 474 chars
 2026-10-31 13:11:38,028 - RAGSystem - INFO - [Total Request] Latency: 18.9767s
+2026-11-01 21:54:24,439 - pinecone_plugin_interface.logging - INFO - Discovering subpackages in _NamespacePath(['/opt/homebrew/Caskroom/miniforge/base/envs/rag_env/lib/python3.11/site-packages/pinecone_plugins'])
+2026-11-01 21:54:24,440 - pinecone_plugin_interface.logging - INFO - Looking for plugins in pinecone_plugins.inference
+2026-11-01 21:54:24,448 - pinecone_plugin_interface.logging - INFO - Installing plugin inference into Pinecone
+2026-11-01 21:54:27,020 - pinecone_plugin_interface.logging - INFO - Discovering subpackages in _NamespacePath(['/opt/homebrew/Caskroom/miniforge/base/envs/rag_env/lib/python3.11/site-packages/pinecone_plugins'])
+2026-11-01 21:54:27,021 - pinecone_plugin_interface.logging - INFO - Looking for plugins in pinecone_plugins.inference
+2026-11-01 21:54:30,121 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2026-11-01 21:54:34,049 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2026-11-01 21:54:34,404 - pinecone_plugin_interface.logging - INFO - Discovering subpackages in _NamespacePath(['/opt/homebrew/Caskroom/miniforge/base/envs/rag_env/lib/python3.11/site-packages/pinecone_plugins'])
+2026-11-01 21:54:34,404 - pinecone_plugin_interface.logging - INFO - Looking for plugins in pinecone_plugins.inference
+2026-11-01 21:54:34,404 - pinecone_plugin_interface.logging - INFO - Installing plugin inference into Pinecone
+2026-11-01 21:54:35,946 - pinecone_plugin_interface.logging - INFO - Discovering subpackages in _NamespacePath(['/opt/homebrew/Caskroom/miniforge/base/envs/rag_env/lib/python3.11/site-packages/pinecone_plugins'])
+2026-11-01 21:54:35,947 - pinecone_plugin_interface.logging - INFO - Looking for plugins in pinecone_plugins.inference
+2026-11-01 21:54:36,707 - sentence_transformers.cross_encoder.CrossEncoder - INFO - Use pytorch device: mps
+2026-11-01 21:54:36,930 - pinecone_plugin_interface.logging - INFO - Discovering subpackages in _NamespacePath(['/opt/homebrew/Caskroom/miniforge/base/envs/rag_env/lib/python3.11/site-packages/pinecone_plugins'])
+2026-11-01 21:54:36,931 - pinecone_plugin_interface.logging - INFO - Looking for plugins in pinecone_plugins.inference
+2026-11-01 21:54:36,931 - pinecone_plugin_interface.logging - INFO - Installing plugin inference into Pinecone
+2026-11-01 21:54:38,530 - pinecone_plugin_interface.logging - INFO - Discovering subpackages in _NamespacePath(['/opt/homebrew/Caskroom/miniforge/base/envs/rag_env/lib/python3.11/site-packages/pinecone_plugins'])
+2026-11-01 21:54:38,531 - pinecone_plugin_interface.logging - INFO - Looking for plugins in pinecone_plugins.inference
+2026-11-01 21:55:39,230 - RAGSystem - INFO - [Upload] Successfully indexed 07 Bitcoin Transactions.pdf: 12 chunks
+2026-11-01 21:55:39,741 - structure.extractor - INFO - Structure extraction 07 Bitcoin Transactions.pdf: strategy=pdf_bookmarks sections=12 pages=12
+2026-11-01 21:55:39,744 - structure.ingest - INFO - Stored structure for 07 Bitcoin Transactions.pdf: doc_id=07-bitcoin-transactions-a70abaf2 sections=12 chunks=12 strategy=pdf_bookmarks
+2026-11-01 21:55:47,042 - RAGSystem - INFO - [Session: j5qz2zrt54] New Query: Explain about joint payment 
+2026-11-01 21:55:47,651 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+2026-11-01 21:55:47,654 - RAGSystem - INFO - [Query Processing] Latency: 0.6112s
+2026-11-01 21:55:47,677 - retrieval.structural - INFO - Ollama is now available for structural selection.
+2026-11-01 21:56:02,640 - retrieval.adaptive - INFO - Adaptive retrieval: retrievers=['semantic', 'lexical', 'structural'] counts={'lexical': 4, 'semantic': 5, 'structural': 1} fused=5
+2026-11-01 21:56:02,650 - evidence.expander - INFO - Evidence expanded: items=5 tokens=446 budget=1800
+2026-11-01 21:56:02,650 - RAGSystem - INFO - [SAH Retrieval & Evidence] Latency: 14.9962s
+2026-11-01 21:56:09,193 - RAGSystem - INFO - [SAH Generation] Latency: 6.5430s
+2026-11-01 21:56:09,193 - RAGSystem - INFO - [Session: j5qz2zrt54] Generated Response Length: 333 chars
+2026-11-01 21:56:09,194 - RAGSystem - INFO - [Total Request] Latency: 22.1515s
